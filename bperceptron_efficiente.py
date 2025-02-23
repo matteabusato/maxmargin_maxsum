@@ -33,7 +33,7 @@ q_down_pos = np.zeros((N,M))
 q_down_neg = np.zeros((N,M))
 xi = np.zeros((M,N+1))
 gamma = np.zeros((M,N+1))
-upsilon = np.zeros((M,N+1))
+ipsilon = np.zeros((M,N+1))
 
 psi_up_partial = []
 for mu in range(M):
@@ -102,7 +102,7 @@ def update_phi_down():
 
 def update_psi_down():
     global psi_down
-    update_upsilon()
+    update_ipsilon()
     for mu in range(M):
         for i in range(N+1):
             temp_array1 = [-np.inf]
@@ -111,17 +111,17 @@ def update_psi_down():
                 for ro in range(M):
                     if ro != mu:
                         temp_array2.append(gamma[ro][index_delta_star])
-                temp_array1.append(max(temp_array2) + upsilon[mu][index_delta_star])
-            psi_down[mu][i] = max(max(temp_array1), upsilon[mu][i])   
+                temp_array1.append(max(temp_array2) + ipsilon[mu][index_delta_star])
+            psi_down[mu][i] = max(max(temp_array1), ipsilon[mu][i])   
 
     #NORMALIZE
     psi_down = normalize(psi_down)
 
-def update_upsilon():
-    global upsilon
+def update_ipsilon():
+    global ipsilon
     for mu in range(M):
         for i in range(N+1):
-            upsilon[mu][i] = sum(xi.T[i]) - xi[mu][i] + phi_down[i]
+            ipsilon[mu][i] = sum(xi.T[i]) - xi[mu][i] + phi_down[i]
 
 # ----------------------
 

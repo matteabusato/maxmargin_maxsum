@@ -50,6 +50,7 @@ q_down_old = np.zeros((N,M))
 
 weights_old = np.zeros(N)
 
+
 # ------------------------------------------------------------------
 # USEFUL FUNCTIONS
 
@@ -84,6 +85,7 @@ def update_weights():
     update_singlesite()
     for i in range(N):
         weights[i] = 1 if np.sign(q_singlesite[i]) >= 0 else -1
+
 
 # ------------------------------------------------------------------
 # BACKWARD PASS
@@ -236,6 +238,7 @@ def forward_pass():
     update_psi_up()
     update_phi_up()
 
+
 # ------------------------------------------------------------------
 # CONVERGENCE ITERATIONS
 
@@ -265,9 +268,6 @@ def check_weights():
     if weights == weights_old:
         COUNTERS[1] += 1
 
-def check_single_site():
-    pass
-
 def converge():
     convergence = False
 
@@ -293,46 +293,9 @@ def converge():
     
     return convergence
     
+    
 # ------------------------------------------------------------------
 # MAIN
-
-def tests():
-    global weights
-    global q_up
-    global psi_down
-    global psi_up
-
-    # Test for a random non-zero psi_down
-    for test_case in range(5):  # Run a few test cases with different random initializations
-        # Initialize psi_down with random values (can range between -1 and 1 for example)
-        psi_up = np.random.uniform(-19, 234, (M, N+1))
-        psi_down = np.random.uniform(-1, 1, (M, N+1))
-        q_up = np.random.uniform(-100, 10, (N, M))
-        weights = np.random.choice([-1, 1], size=N)
-
-
-        update_psi_up_partial()
-        result1 = psi_up_partial.copy()
-
-
-        if result1 == result1 :
-            print("Test passed yey")
-            print(result1)
-        else:
-            print("Test FAILEEEED")
-        
-
-        # # Use assertion to check if both results are equal
-        # assert np.allclose(result1, result2), \
-        #     f"Test failed on case {test_case + 1}: The results of update_psi_down and update_psi_down2 do not match.\n" \
-        #     f"Result 1:\n{result1}\nResult 2:\n{result2}"
-
-        # # If assertion passes, print success message
-        # print(f"Test {test_case + 1} passed: Both functions give the same result. The results of update_psi_down and update_psi_down2 match.\n" \
-        #     f"Result 1:\n{result1}\nResult 2:\n{result2}")
-
-    print("All tests passed.")
-
 if __name__ == '__main__':
     # if converge():
     #     print('Has converged!')
@@ -341,5 +304,4 @@ if __name__ == '__main__':
 
     # backward_pass()
     # forward_pass()
-    # print("done")
-    tests()
+    print("done")

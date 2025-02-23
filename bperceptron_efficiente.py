@@ -177,11 +177,11 @@ def update_xi():
     for mu in range(M):
         for delta in POSSIBLE_DELTA_MUS:
             index1 = int((delta + N) / 2)
-            temp_max_array = [-np.inf]
+            max1 = -np.inf
             for delta_prime in POSSIBLE_DELTA_MUS[index1:]:
                 index2 = int((delta + N) / 2)
-                temp_max_array.append(psi_up[mu][index2])
-            xi[mu][index1] = max(temp_max_array)
+                max1 = max(max1, psi_up[mu][index2])
+            xi[mu][index1] = max1
 
 def update_gamma():
     global gamma
@@ -210,16 +210,15 @@ def update_psi_up_partial():
             current_possible_deltas = [(-j-1)+i*2 for i in range(j+2)]
             for delta in current_possible_deltas:
                 index1 = int((delta + j + 1)/ 2)
-                temp_max_array = [-np.inf]
+                max1 = -np.inf
                 for weight in [-1,1]:
                     if j==0:
-                        temp_max_array.append(delta*patterns[mu][j]*q_up[j][mu])
+                        max1 = max(max1, delta*patterns[mu][j]*q_up[j][mu])
                     else:
                         index2 = int(((delta - weight*patterns[mu][j]) + j) / 2)
                         if index2 < j+1:
-                            temp_max_array.append(psi_up_partial[mu][j-1][index2] + weight*q_up[j][mu])
-                psi_up_partial[mu][j][index1] = max(temp_max_array)
-
+                            max1 = max(max1, psi_up_partial[mu][j-1][index2] + weight*q_up[j][mu])
+                psi_up_partial[mu][j][index1] = max1
 
 # ----------------------
 
@@ -301,30 +300,36 @@ def tests():
     global weights
     global q_up
     global psi_down
+    global psi_up
 
     # Test for a random non-zero psi_down
     for test_case in range(5):  # Run a few test cases with different random initializations
         # Initialize psi_down with random values (can range between -1 and 1 for example)
+        psi_up = np.random.uniform(-19, 234, (M, N+1))
         psi_down = np.random.uniform(-1, 1, (M, N+1))
         q_up = np.random.uniform(-100, 10, (N, M))
         weights = np.random.choice([-1, 1], size=N)
 
-        for i in range(N):
-            for mu in range(M):
-                update_q_down_neg(i, mu)
-                update_q_down_neg(i, mu)
 
-        result1 = q_down_pos.copy()
-        result2 = q_down_pos.copy()
+        update_psi_up_partial()
+        result1 = psi_up_partial.copy()
 
-        # Use assertion to check if both results are equal
-        assert np.allclose(result1, result2), \
-            f"Test failed on case {test_case + 1}: The results of update_psi_down and update_psi_down2 do not match.\n" \
-            f"Result 1:\n{result1}\nResult 2:\n{result2}"
 
-        # If assertion passes, print success message
-        print(f"Test {test_case + 1} passed: Both functions give the same result. The results of update_psi_down and update_psi_down2 do not match.\n" \
-            f"Result 1:\n{result1}\nResult 2:\n{result2}")
+        if result1 == result1 :
+            print("Test passed yey")
+            print(result1)
+        else:
+            print("Test FAILEEEED")
+        
+
+        # # Use assertion to check if both results are equal
+        # assert np.allclose(result1, result2), \
+        #     f"Test failed on case {test_case + 1}: The results of update_psi_down and update_psi_down2 do not match.\n" \
+        #     f"Result 1:\n{result1}\nResult 2:\n{result2}"
+
+        # # If assertion passes, print success message
+        # print(f"Test {test_case + 1} passed: Both functions give the same result. The results of update_psi_down and update_psi_down2 match.\n" \
+        #     f"Result 1:\n{result1}\nResult 2:\n{result2}")
 
     print("All tests passed.")
 

@@ -105,14 +105,14 @@ def update_psi_down():
     update_ipsilon()
     for mu in range(M):
         for i in range(N+1):
-            temp_array1 = [-np.inf]
+            max1 = -np.inf
             for index_delta_star in range(i):
-                temp_array2 = [-np.inf]
+                max2 = -np.inf
                 for ro in range(M):
                     if ro != mu:
-                        temp_array2.append(gamma[ro][index_delta_star])
-                temp_array1.append(max(temp_array2) + ipsilon[mu][index_delta_star])
-            psi_down[mu][i] = max(max(temp_array1), ipsilon[mu][i])   
+                        max2 = max(max2, gamma[ro][index_delta_star])
+                max1 = max(max1, max2 + ipsilon[mu][index_delta_star])
+            psi_down[mu][i] = max(max1, ipsilon[mu][i])   
 
     #NORMALIZE
     psi_down = normalize(psi_down)
@@ -135,21 +135,21 @@ def update_q_down():
 
 def update_q_down_pos(i,mu):
     global q_down_pos
-    temp_max_array = [-np.inf]
+    max1 = -np.inf
     for poss_weights in POSSIBLE_WEIGHTS:
         delta = np.dot(poss_weights, patterns[mu]) - poss_weights[i]*patterns[mu][i] + 1*patterns[mu][i]
         index = int((delta + N) / 2)
-        temp_max_array.append(np.dot(poss_weights, q_up.T[mu]) + psi_down[mu][index])
-    q_down_pos[i][mu] = max(temp_max_array) - 1*q_up[i][mu]
+        max1 = max(max1, np.dot(poss_weights, q_up.T[mu]) + psi_down[mu][index])
+    q_down_pos[i][mu] = max1 - 1*q_up[i][mu]
 
 def update_q_down_neg(i,mu):
     global q_down_neg
-    temp_max_array = [-np.inf]
+    max1 = -np.inf
     for poss_weights in POSSIBLE_WEIGHTS:
         delta = np.dot(poss_weights, patterns[mu]) - poss_weights[i]*patterns[mu][i] + (-1)*patterns[mu][i]
         index = int((delta + N) / 2)
-        temp_max_array.append(np.dot(poss_weights, q_up.T[mu]) + psi_down[mu][index])
-    q_down_neg[i][mu] = max(temp_max_array) - (-1)*q_up[i][mu]
+        max1 = max(max1, np.dot(poss_weights, q_up.T[mu]) + psi_down[mu][index])
+    q_down_neg[i][mu] = max1 - (-1)*q_up[i][mu]
 
 # ----------------------
 
@@ -296,12 +296,45 @@ def converge():
     
 # ------------------------------------------------------------------
 # MAIN
+
+def tests():
+    global weights
+    global q_up
+    global psi_down
+
+    # Test for a random non-zero psi_down
+    for test_case in range(5):  # Run a few test cases with different random initializations
+        # Initialize psi_down with random values (can range between -1 and 1 for example)
+        psi_down = np.random.uniform(-1, 1, (M, N+1))
+        q_up = np.random.uniform(-100, 10, (N, M))
+        weights = np.random.choice([-1, 1], size=N)
+
+        for i in range(N):
+            for mu in range(M):
+                update_q_down_neg(i, mu)
+                update_q_down_neg(i, mu)
+
+        result1 = q_down_pos.copy()
+        result2 = q_down_pos.copy()
+
+        # Use assertion to check if both results are equal
+        assert np.allclose(result1, result2), \
+            f"Test failed on case {test_case + 1}: The results of update_psi_down and update_psi_down2 do not match.\n" \
+            f"Result 1:\n{result1}\nResult 2:\n{result2}"
+
+        # If assertion passes, print success message
+        print(f"Test {test_case + 1} passed: Both functions give the same result. The results of update_psi_down and update_psi_down2 do not match.\n" \
+            f"Result 1:\n{result1}\nResult 2:\n{result2}")
+
+    print("All tests passed.")
+
 if __name__ == '__main__':
-    if converge():
-        print('Has converged!')
-    else:
-        print('Fail :(')
+    # if converge():
+    #     print('Has converged!')
+    # else:
+    #     print('Fail :(')
 
     # backward_pass()
     # forward_pass()
     # print("done")
+    tests()

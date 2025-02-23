@@ -65,10 +65,10 @@ def store():
     global q_down_old
 
     q_up_old = q_up.copy()
-    psi_up_old = psi_up
-    phi_up_old = phi_up
-    psi_down_old = psi_down
-    q_down_old = q_down
+    psi_up_old = psi_up.copy()
+    phi_up_old = phi_up.copy()
+    psi_down_old = psi_down.copy()
+    q_down_old = q_down.copy()
 
 
 # ------------------------------------------------------------------

@@ -131,7 +131,7 @@ def update_q_down():
         for i in range(N):
             update_q_down_pos(i,mu)
             update_q_down_neg(i,mu)
-            q_down[i][mu] = q_down_pos[i][mu] - q_down_neg[i][mu]
+            q_down[i][mu] = q_down_pos[i][mu] / 2 - q_down_neg[i][mu] / 2
 
 def update_q_down_pos(i,mu):
     global q_down_pos

@@ -39,7 +39,7 @@ psi_up_partial = []
 for mu in range(M):
     psi_up_partial.append([np.zeros(j + 2) for j in range(N)])
 
-# data structures for old messages and weights  
+# data structures to store messages and weights  
 q_up_old = np.zeros((N,M))
 psi_up_old = np.zeros((M,N+1))
 phi_up_old = np.zeros(N+1)
@@ -49,6 +49,7 @@ psi_down_old = np.zeros((M,N+1))
 q_down_old = np.zeros((N,M))
 
 weights_old = np.zeros(N)
+weights_best = weights.copy()
 
 
 # ------------------------------------------------------------------
@@ -297,10 +298,10 @@ def converge():
 # ------------------------------------------------------------------
 # MAIN
 if __name__ == '__main__':
-    # if converge():
-    #     print('Has converged!')
-    # else:
-    #     print('Fail :(')
+    if converge():
+        print('Has converged!')
+    else:
+        print('Fail :(')
 
     # backward_pass()
     # forward_pass()

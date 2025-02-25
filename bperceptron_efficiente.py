@@ -33,13 +33,13 @@ q_down_pos = np.zeros((N,M))
 q_down_neg = np.zeros((N,M))
 xi = np.zeros((M,N+1))
 gamma = np.zeros((M,N+1))
-upsilon = np.zeros((M,N+1))
+ipsilon = np.zeros((M,N+1))
 
 psi_up_partial = []
 for mu in range(M):
     psi_up_partial.append([np.zeros(j + 2) for j in range(N)])
 
-# data structures for old messages and weights  
+# data structures to store messages and weights  
 q_up_old = np.zeros((N,M))
 psi_up_old = np.zeros((M,N+1))
 phi_up_old = np.zeros(N+1)
@@ -49,6 +49,8 @@ psi_down_old = np.zeros((M,N+1))
 q_down_old = np.zeros((N,M))
 
 weights_old = np.zeros(N)
+weights_best = weights.copy()
+
 
 # ------------------------------------------------------------------
 # USEFUL FUNCTIONS
@@ -65,10 +67,10 @@ def store():
     global q_down_old
 
     q_up_old = q_up.copy()
-    psi_up_old = psi_up
-    phi_up_old = phi_up
-    psi_down_old = psi_down
-    q_down_old = q_down
+    psi_up_old = psi_up.copy()
+    phi_up_old = phi_up.copy()
+    psi_down_old = psi_down.copy()
+    q_down_old = q_down.copy()
 
 
 # ------------------------------------------------------------------
@@ -84,6 +86,7 @@ def update_weights():
     update_singlesite()
     for i in range(N):
         weights[i] = 1 if np.sign(q_singlesite[i]) >= 0 else -1
+
 
 # ------------------------------------------------------------------
 # BACKWARD PASS
@@ -102,26 +105,26 @@ def update_phi_down():
 
 def update_psi_down():
     global psi_down
-    update_upsilon()
+    update_ipsilon()
     for mu in range(M):
         for i in range(N+1):
-            temp_array1 = [-np.inf]
+            max1 = -np.inf
             for index_delta_star in range(i):
-                temp_array2 = [-np.inf]
+                max2 = -np.inf
                 for ro in range(M):
                     if ro != mu:
-                        temp_array2.append(gamma[ro][index_delta_star])
-                temp_array1.append(max(temp_array2) + upsilon[mu][index_delta_star])
-            psi_down[mu][i] = max(max(temp_array1), upsilon[mu][i])   
+                        max2 = max(max2, gamma[ro][index_delta_star])
+                max1 = max(max1, max2 + ipsilon[mu][index_delta_star])
+            psi_down[mu][i] = max(max1, ipsilon[mu][i])   
 
     #NORMALIZE
     psi_down = normalize(psi_down)
 
-def update_upsilon():
-    global upsilon
+def update_ipsilon():
+    global ipsilon
     for mu in range(M):
         for i in range(N+1):
-            upsilon[mu][i] = sum(xi.T[i]) - xi[mu][i] + phi_down[i]
+            ipsilon[mu][i] = sum(xi.T[i]) - xi[mu][i] + phi_down[i]
 
 # ----------------------
 
@@ -131,25 +134,25 @@ def update_q_down():
         for i in range(N):
             update_q_down_pos(i,mu)
             update_q_down_neg(i,mu)
-            q_down[i][mu] = q_down_pos[i][mu] - q_down_neg[i][mu]
+            q_down[i][mu] = q_down_pos[i][mu] / 2 - q_down_neg[i][mu] / 2
 
 def update_q_down_pos(i,mu):
     global q_down_pos
-    temp_max_array = [-np.inf]
+    max1 = -np.inf
     for poss_weights in POSSIBLE_WEIGHTS:
         delta = np.dot(poss_weights, patterns[mu]) - poss_weights[i]*patterns[mu][i] + 1*patterns[mu][i]
         index = int((delta + N) / 2)
-        temp_max_array.append(np.dot(poss_weights, q_up.T[mu]) + psi_down[mu][index])
-    q_down_pos[i][mu] = max(temp_max_array) - 1*q_up[i][mu]
+        max1 = max(max1, np.dot(poss_weights, q_up.T[mu]) + psi_down[mu][index])
+    q_down_pos[i][mu] = max1 - 1*q_up[i][mu]
 
 def update_q_down_neg(i,mu):
     global q_down_neg
-    temp_max_array = [-np.inf]
+    max1 = -np.inf
     for poss_weights in POSSIBLE_WEIGHTS:
         delta = np.dot(poss_weights, patterns[mu]) - poss_weights[i]*patterns[mu][i] + (-1)*patterns[mu][i]
         index = int((delta + N) / 2)
-        temp_max_array.append(np.dot(poss_weights, q_up.T[mu]) + psi_down[mu][index])
-    q_down_neg[i][mu] = max(temp_max_array) - (-1)*q_up[i][mu]
+        max1 = max(max1, np.dot(poss_weights, q_up.T[mu]) + psi_down[mu][index])
+    q_down_neg[i][mu] = max1 - (-1)*q_up[i][mu]
 
 # ----------------------
 
@@ -177,11 +180,11 @@ def update_xi():
     for mu in range(M):
         for delta in POSSIBLE_DELTA_MUS:
             index1 = int((delta + N) / 2)
-            temp_max_array = [-np.inf]
+            max1 = -np.inf
             for delta_prime in POSSIBLE_DELTA_MUS[index1:]:
                 index2 = int((delta + N) / 2)
-                temp_max_array.append(psi_up[mu][index2])
-            xi[mu][index1] = max(temp_max_array)
+                max1 = max(max1, psi_up[mu][index2])
+            xi[mu][index1] = max1
 
 def update_gamma():
     global gamma
@@ -210,16 +213,15 @@ def update_psi_up_partial():
             current_possible_deltas = [(-j-1)+i*2 for i in range(j+2)]
             for delta in current_possible_deltas:
                 index1 = int((delta + j + 1)/ 2)
-                temp_max_array = [-np.inf]
+                max1 = -np.inf
                 for weight in [-1,1]:
                     if j==0:
-                        temp_max_array.append(delta*patterns[mu][j]*q_up[j][mu])
+                        max1 = max(max1, delta*patterns[mu][j]*q_up[j][mu])
                     else:
                         index2 = int(((delta - weight*patterns[mu][j]) + j) / 2)
                         if index2 < j+1:
-                            temp_max_array.append(psi_up_partial[mu][j-1][index2] + weight*q_up[j][mu])
-                psi_up_partial[mu][j][index1] = max(temp_max_array)
-
+                            max1 = max(max1, psi_up_partial[mu][j-1][index2] + weight*q_up[j][mu])
+                psi_up_partial[mu][j][index1] = max1
 
 # ----------------------
 
@@ -236,6 +238,7 @@ def forward_pass():
     update_q_up()
     update_psi_up()
     update_phi_up()
+
 
 # ------------------------------------------------------------------
 # CONVERGENCE ITERATIONS
@@ -266,9 +269,6 @@ def check_weights():
     if weights == weights_old:
         COUNTERS[1] += 1
 
-def check_single_site():
-    pass
-
 def converge():
     convergence = False
 
@@ -294,6 +294,7 @@ def converge():
     
     return convergence
     
+    
 # ------------------------------------------------------------------
 # MAIN
 if __name__ == '__main__':
@@ -304,4 +305,4 @@ if __name__ == '__main__':
 
     # backward_pass()
     # forward_pass()
-    # print("done")
+    print("done")

@@ -2,8 +2,8 @@ import numpy as np
 import itertools
 
 # constants for testing
-N = 3    # dimension of patterns
-M = 2    # number of patterns M = alpha * N
+N = 7    # dimension of patterns
+M = 5    # number of patterns M = alpha * N
 THRESHOLD = 1e-4
 ITERATIONS = 10
 POSSIBLE_DELTA_MUS = [-N+i*2 for i in range(N+1)]
@@ -38,6 +38,14 @@ ipsilon = np.zeros((M,N+1))
 psi_up_partial = []
 for mu in range(M):
     psi_up_partial.append([np.zeros(j + 2) for j in range(N)])
+
+f_left = []
+for mu in range(M):
+    f_left.append([np.zeros(j + 2) for j in range(N)])
+
+f_right = []
+for mu in range(M):
+    f_right.append([np.zeros(j + 2) for j in range(N)])
 
 # data structures to store messages and weights  
 q_up_old = np.zeros((N,M))
@@ -153,6 +161,107 @@ def update_q_down_neg(i,mu):
         index = int((delta + N) / 2)
         max1 = max(max1, np.dot(poss_weights, q_up.T[mu]) + psi_down[mu][index])
     q_down_neg[i][mu] = max1 - (-1)*q_up[i][mu]
+
+#-----------------------------------------------------------------------
+
+def update_q_down2():
+    global q_down
+    update_f_left()
+    update_f_right()
+    for mu in range(M):
+        for i in range(N):
+            update_q_down_neg2(i, mu)
+            update_q_down_pos2(i, mu)
+            q_down[i][mu] = q_down_pos[i][mu] / 2 - q_down_neg[i][mu] / 2
+
+def update_q_down_pos2(i, mu):
+    global q_down_pos
+    max1 = -np.inf
+    i_prime = N-i-1
+    if i != 0 and i != N-1:
+        for delta_left in [-i+j*2 for j in range(i+1)]:
+            index_left  = int((delta_left + i ) / 2)
+            for delta_right in [-(N-i-1)+j*2 for j in range(N-i)]:
+                index_right = int((delta_right + (N-i-1)) / 2)
+                index = int(( (delta_left + (+1)*xi[mu][i]+ delta_right) + N) / 2)
+                if index < N:
+                    max1 = max(max1, f_left[mu][i-1][index_left] + f_right[mu][i_prime-1][index_right] + psi_down[mu][index])
+    elif i == 0:
+        for delta_right in [-(N-1)+j*2 for j in range(N)]:
+            index_right = int((delta_right + (N-1)) / 2)
+            index = int((((+1)*xi[mu][i]+ delta_right) + N) / 2)
+            if index < N:
+                max1 = max(max1, f_right[mu][i_prime-1][index_right] + psi_down[mu][index])
+    elif i == N-1:
+        for delta_left in [-(N-1)+j*2 for j in range(N)]:
+            index_left  = int((delta_left + (N-1)) / 2)
+            index = int(( (delta_left + (+1)*xi[mu][i]) + N) / 2)
+            if index < N:
+                max1 = max(max1, f_left[mu][i-1][index_left] + psi_down[mu][index])
+
+    q_down_pos[i][mu] = max1
+
+def update_q_down_neg2(i, mu):
+    global q_down_pos
+    max1 = -np.inf
+    i_prime = N-i-1
+    if i != 0 and i != N-1:
+        for delta_left in [-i+j*2 for j in range(i+1)]:
+            index_left  = int((delta_left + i ) / 2)
+            for delta_right in [-(N-i-1)+j*2 for j in range(N-i)]:
+                index_right = int((delta_right + (N-i-1)) / 2)
+                index = int(( (delta_left + (-1)*xi[mu][i]+ delta_right) + N) / 2)
+                if index < N:
+                    max1 = max(max1, f_left[mu][i-1][index_left] + f_right[mu][i_prime-1][index_right] + psi_down[mu][index])
+    elif i == 0:
+        for delta_right in [-(N-1)+j*2 for j in range(N)]:
+            index_right = int((delta_right + (N-1)) / 2)
+            index = int((((-1)*xi[mu][i]+ delta_right) + N) / 2)
+            if index < N:
+                max1 = max(max1, f_right[mu][i_prime-1][index_right] + psi_down[mu][index])
+    elif i == N-1:
+        for delta_left in [-(N-1)+j*2 for j in range(N)]:
+            index_left  = int((delta_left + (N-1)) / 2)
+            index = int(( (delta_left + (-1)*xi[mu][i]) + N) / 2)
+            if index < N:
+                max1 = max(max1, f_left[mu][i-1][index_left] + psi_down[mu][index])
+
+    q_down_pos[i][mu] = max1
+
+def update_f_left():
+    global f_left
+    for mu in range(M):
+        for k in range(N-1):
+            current_possible_deltas = [(-k-1)+i*2 for i in range(k+2)]
+            for delta in current_possible_deltas:
+                index1 = int((delta + k + 1)/ 2)
+                max1 = -np.inf
+                for weight in [-1,1]:
+                    if k==0:
+                        max1 = max(max1, delta*patterns[mu][k]*q_up[k][mu])
+                    else:
+                        index2 = int(((delta - weight*patterns[mu][k]) + k) / 2)
+                        if index2 < k+1:
+                            max1 = max(max1, f_left[mu][k-1][index2] + weight*q_up[k][mu])
+                f_left[mu][k][index1] = max1
+
+def update_f_right():
+    global f_right
+    for mu in range(M):
+        for k_prime in range(N-1):
+            k = N-k_prime-1
+            current_possible_deltas = [(-k_prime-1)+i*2 for i in range(k_prime+2)]
+            for delta in current_possible_deltas:
+                index1 = int((delta + k_prime + 1)/ 2)
+                max1 = -np.inf
+                for weight in [-1,1]:
+                    if k==N-1:
+                        max1 = max(max1, delta*patterns[mu][k]*q_up[k][mu])
+                    else:
+                        index2 = int(((delta - weight*patterns[mu][k]) + k_prime) / 2)
+                        if index2 < k_prime+1:
+                            max1 = max(max1, f_right[mu][k_prime-1][index2] + weight*q_up[k][mu])
+                f_right[mu][k_prime][index1] = max1
 
 # ----------------------
 
@@ -297,12 +406,30 @@ def converge():
     
 # ------------------------------------------------------------------
 # MAIN
-if __name__ == '__main__':
-    if converge():
-        print('Has converged!')
-    else:
-        print('Fail :(')
+def test():
+    global q_up
+    q_up = np.random.randint(-13, 100, (N, M))
+    update_q_down2()
+    copy1 = q_down.copy()
 
-    # backward_pass()
-    # forward_pass()
+    update_q_down()
+    copy2 = q_down.copy()
+
+    print(copy1)
+
+    print()
+
+    print(copy2)
+
+    # assert np.array_equal(copy1, copy2)
+    
+
+
+if __name__ == '__main__':
+    # if converge():
+    #     print('Has converged!')
+    # else:
+    #     print('Fail :(')
+
+    test()
     print("done")

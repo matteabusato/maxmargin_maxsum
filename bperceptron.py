@@ -46,6 +46,9 @@ weights_old = np.zeros(N)
 # ------------------------------------------------------------------
 # USEFUL FUNCTIONS
 
+def delta_to_ind(delta):
+    return (delta + N) // 2
+
 def normalize(array):
     max_value = np.max(array)
     return array - max_value 
@@ -88,31 +91,30 @@ def update_phi_down():
             delta = 1 / N
             for i in range(N+1):
                 phi_down[i] = -1 + delta*i
-        case 1:
+        case 1: # for exponential phi down
             pass
 
-    #NORMALIZE
-    phi_down = normalize(phi_down)
+# ----------------------
 
 def update_psi_down():
     global psi_down
-    for mu in range(M): # fix mu
-        for i in range(N+1):  # fix delta mu and index i of delta mu
-            delta_mu = POSSIBLE_DELTA_MUS[i] 
-            temp_max_array1 = []
-            for j in range(i+1): # fix delta star and index j of delta star
-                delta_star = POSSIBLE_DELTA_MUS[j]
-                temp_max_array2 = []
+    for mu in range(M):
+        for delta_mu in POSSIBLE_DELTA_MUS:
+            index_delta_mu = delta_to_ind(delta_mu)
+            max1 = -np.inf
+            for delta_star in POSSIBLE_DELTA_MUS[:index_delta_mu]:
+                index_delta_star = delta_to_ind(delta_star)
+                max2 = -np.inf
                 for delta_nu_set in POSSIBLE_DELTA_MUS_SETS:
                     if min(delta_nu_set) == delta_star:
                         temp_sum = 0
                         for nu in range(M):
                             if nu != mu:
-                                index = int((delta_nu_set[nu] - N) / 2)
-                                temp_sum += psi_up[nu][index]
-                    temp_max_array2.append(temp_sum)
-                temp_max_array1.append(max(temp_max_array2) + phi_down[j])
-            psi_down[mu][i] = max(temp_max_array1)
+                                temp_index = delta_to_ind(delta_nu_set[nu])
+                                temp_sum += psi_up[nu][temp_index]
+                        max2 = max(max2, temp_sum)
+                max1 = max(max1, max2 + phi_down[index_delta_star])
+            psi_down[mu][index_delta_mu] = max1
 
     #NORMALIZE
     psi_down = normalize(psi_down)
@@ -123,25 +125,31 @@ def update_q_down():
         for i in range(N):
             update_q_down_pos(i,mu)
             update_q_down_neg(i,mu)
-            q_down[i][mu] = q_down_pos[i][mu] - q_down_neg[i][mu]
+            q_down[i][mu] = (q_down_pos[i][mu] - q_down_neg[i][mu]) / 2
 
 def update_q_down_pos(i,mu):
     global q_down_pos
-    temp_max_array = []
-    for poss_weights in POSSIBLE_WEIGHTS:
-        delta = np.dot(poss_weights, patterns[mu]) - poss_weights[i]*patterns[mu][i] + 1*patterns[mu][i]
-        index = int((delta + N) / 2)
-        temp_max_array.append(np.dot(poss_weights, q_up.T[mu]) + psi_down[mu][index])
-    q_down_pos[i][mu] = max(temp_max_array) - 1*q_up[i][mu]
+    max1 = -np.inf
+    for delta in POSSIBLE_DELTA_MUS:
+        index1 = delta_to_ind(delta)
+        max2 = -np.inf
+        for poss_weights in POSSIBLE_WEIGHTS:
+            if (np.dot(poss_weights, patterns[mu]) - poss_weights[i]*patterns[mu][i] + (+1)*patterns[mu][i]) == delta:
+                max2 = max(max2, np.dot(poss_weights, q_up.T[mu]) - poss_weights[i]*q_up[i][mu])
+        max1 = max(max1, max2 + psi_down[mu][index1])
+    q_down_pos[i][mu] = max1
 
 def update_q_down_neg(i,mu):
     global q_down_neg
-    temp_max_array = []
-    for poss_weights in POSSIBLE_WEIGHTS:
-        delta = np.dot(poss_weights, patterns[mu]) - poss_weights[i]*patterns[mu][i] + (-1)*patterns[mu][i]
-        index = int((delta + N) / 2)
-        temp_max_array.append(np.dot(poss_weights, q_up.T[mu]) + psi_down[mu][index])
-    q_down_neg[i][mu] = max(temp_max_array) - (-1)*q_up[i][mu]
+    max1 = -np.inf
+    for delta in POSSIBLE_DELTA_MUS:
+        index1 = delta_to_ind(delta)
+        max2 = -np.inf
+        for poss_weights in POSSIBLE_WEIGHTS:
+            if (np.dot(poss_weights, patterns[mu]) - poss_weights[i]*patterns[mu][i] + (+1)*patterns[mu][i]) == delta:
+                max2 = max(max2, np.dot(poss_weights, q_up.T[mu]) - poss_weights[i]*q_up[i][mu])
+        max1 = max(max1, max2 + psi_down[mu][index1])
+    q_down_neg[i][mu] = max1
 
 def backward_pass():
     update_phi_down()
@@ -154,17 +162,17 @@ def backward_pass():
 
 def update_phi_up():
     global phi_up
-    for i in range(N+1):
-        delta_star = POSSIBLE_DELTA_MUS[i]  # fix delta star
-        temp_max_array = []
+    for delta_star in POSSIBLE_DELTA_MUS:
+        index_delta_star = delta_to_ind(delta_star)
+        max1 = -np.inf
         for delta_mu_set in POSSIBLE_DELTA_MUS_SETS:
             if min(delta_mu_set) == delta_star:
                 temp_sum = 0
                 for mu in range(M):
-                    index = int((delta_mu_set[mu] + N) / 2)
-                    temp_sum += psi_up[mu][index]
-                temp_max_array.append(temp_sum)
-        phi_up[i] = max(temp_max_array)
+                    temp_index = delta_to_ind(delta_mu_set[mu])
+                    temp_sum += psi_up[mu][temp_index]
+                max1 = max(max1, temp_sum)
+        phi_up[index_delta_star] = max1
 
     #NORMALIZE
     phi_up = normalize(phi_up)
@@ -172,14 +180,13 @@ def update_phi_up():
 def update_psi_up():
     global psi_up
     for mu in range(M):
-        for i in range(N+1):
-            delta = POSSIBLE_DELTA_MUS[i]  # fix delta
-            temp_max_array = []
-            for weights in POSSIBLE_WEIGHTS:  # per tutte le possibili combinazioni di weights such that W*ξ = Δ
-                weights = np.array(weights)
+        for delta in POSSIBLE_DELTA_MUS:
+            delta_index = delta_to_ind(delta)
+            max1 = -np.inf
+            for poss_weights in POSSIBLE_WEIGHTS:
                 if np.dot(weights, patterns[mu]) == delta:
-                    temp_max_array.append(np.dot(weights, q_up.T[mu]))
-            psi_up[mu][i] = max(temp_max_array)
+                    max1 = max(max1, np.dot(weights, q_up.T[mu]))
+            psi_up[mu][delta_index] = max1
 
     #NORMALIZE
     psi_up = normalize(psi_up)
@@ -203,9 +210,8 @@ def forward_pass():
 def check_convergence():
     check_differences()
     check_weights()
-    check_single_site()
 
-    if max(COUNTERS) >= 3:
+    if max(COUNTERS) >= 2:
         return True
     
     return False
@@ -238,9 +244,9 @@ def converge():
         store()
         update_weights()
 
-        if check_convergence():
-            convergence = True
-            break
+        # if check_convergence():
+        #     convergence = True
+        #     break
     
     return convergence
     

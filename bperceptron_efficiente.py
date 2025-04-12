@@ -72,14 +72,12 @@ def normalize(array):
     max_value = np.max(array)
     return array - max_value 
 
-def my_sign(array):
-    if type(array) is list:
-        for i in range(len(array)):
-            if array[i] >= 0: array[i] = 1
-            elif array[i] < 0: array[i] = -1
-        return array
-    elif type(array) is int:
-        return 1 if array >= 0 else -1
+def my_sign(x):
+    array = x.copy()
+    for i in range(len(array)):
+        if array[i] >= 0: array[i] = 1
+        elif array[i] < 0: array[i] = -1
+    return array
 
 def store():
     global q_up_old
@@ -162,10 +160,6 @@ def update_q_down():
         k_tilde = np.array([-1]*N)
         for (k,j) in enumerate(I_minus[mu]):
             k_tilde[j] = k
-
-        # for i in range(len(I_minus[mu])):
-        #     j = U_minus[mu][I_minus[mu][i]]
-        #     k_tilde[j] = i
 
         for si in range(2):
             s = -1+2*si
@@ -262,19 +256,18 @@ def update_psi_up():
     global I_plus
     global delta_tilde
     for mu in range(M):
-        weights_tilde = np.sign(q_up.T[mu])
+        weights_tilde = my_sign(q_up.T[mu])
         delta_tilde[mu] = int(np.dot(patterns[mu], weights_tilde))
-        psi_up_tilde = np.sum(np.abs(q_up.T[mu]))
-        delta_index_tilde = int((delta_tilde[mu] + N) / 2) # //
+        #psi_up_tilde = np.sum(np.abs(q_up.T[mu]))
+        delta_index_tilde = (delta_tilde[mu] + N) // 2
+        print(type(delta_index_tilde))
         psi_up[mu][delta_index_tilde] = 0.0 #psi_up_tilde
+        print(weights_tilde, delta_tilde[mu])
 
-        U_minus[mu] = np.array([i for i in range(N) if patterns[mu][i] != np.sign(q_up[i][mu])]).astype(int)
-        #I_minus[mu] = np.argsort(np.abs(q_up.T[mu][U_minus[mu]]))
+        U_minus[mu] = np.array([i for i in range(N) if patterns[mu][i] != my_sign(q_up[i][mu])]).astype(int)
         I_minus[mu] = U_minus[mu].copy().sort(key=lambda i: q_up[i][mu].abs())
-        U_plus[mu] = np.array([i for i in range(N) if patterns[mu][i] == np.sign(q_up[i][mu])]).astype(int)
-        #I_plus[mu] = np.argsort(np.abs(q_up.T[mu][U_plus[mu]]))
+        U_plus[mu] = np.array([i for i in range(N) if patterns[mu][i] == my_sign(q_up[i][mu])]).astype(int)
         I_plus[mu] = U_plus[mu].copy().sort(key=lambda i: q_up[i][mu].abs())
-
 
         psi_temp = 0.0 #psi_up_tilde
         delta_index = delta_index_tilde
@@ -290,8 +283,8 @@ def update_psi_up():
             psi_temp -= 2*q_up[i][mu].abs()
             psi_up[mu][delta_index] = psi_temp
  
-    #NORMALIZE
-#    psi_up = psi_up - np.sum(np.abs(q_up.T[mu]))
+    #NORMALIZE ( already normalized )
+    # psi_up = psi_up - np.sum(np.abs(q_up.T[mu]))
 
 # ----------------------
 

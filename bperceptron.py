@@ -94,15 +94,13 @@ def update_phi_down():
         case 1: # for exponential phi down
             pass
 
-# ----------------------
-
 def update_psi_down():
     global psi_down
     for mu in range(M):
         for delta_mu in POSSIBLE_DELTA_MUS:
             index_delta_mu = delta_to_ind(delta_mu)
             max1 = -np.inf
-            for delta_star in POSSIBLE_DELTA_MUS[:index_delta_mu]:
+            for delta_star in POSSIBLE_DELTA_MUS[:index_delta_mu + 1]:
                 index_delta_star = delta_to_ind(delta_star)
                 max2 = -np.inf
                 for delta_nu_set in POSSIBLE_DELTA_MUS_SETS:
@@ -146,7 +144,7 @@ def update_q_down_neg(i,mu):
         index1 = delta_to_ind(delta)
         max2 = -np.inf
         for poss_weights in POSSIBLE_WEIGHTS:
-            if (np.dot(poss_weights, patterns[mu]) - poss_weights[i]*patterns[mu][i] + (+1)*patterns[mu][i]) == delta:
+            if (np.dot(poss_weights, patterns[mu]) - poss_weights[i]*patterns[mu][i] + (-1)*patterns[mu][i]) == delta:
                 max2 = max(max2, np.dot(poss_weights, q_up.T[mu]) - poss_weights[i]*q_up[i][mu])
         max1 = max(max1, max2 + psi_down[mu][index1])
     q_down_neg[i][mu] = max1
@@ -184,8 +182,8 @@ def update_psi_up():
             delta_index = delta_to_ind(delta)
             max1 = -np.inf
             for poss_weights in POSSIBLE_WEIGHTS:
-                if np.dot(weights, patterns[mu]) == delta:
-                    max1 = max(max1, np.dot(weights, q_up.T[mu]))
+                if np.dot(poss_weights, patterns[mu]) == delta:
+                    max1 = max(max1, np.dot(poss_weights, q_up.T[mu]))
             psi_up[mu][delta_index] = max1
 
     #NORMALIZE
@@ -244,6 +242,16 @@ def converge():
         store()
         update_weights()
 
+        print("ITERATION: ", i)
+        print("q_up: ", q_up)
+        print("psi_up: ", psi_up)
+        print("phi_up: ", phi_up)
+        print("phi_down: ", phi_down)
+        print("psi_down: ", psi_down)
+        print("q_down: ", q_down)
+        print("weights: ", weights)
+        print()
+
         # if check_convergence():
         #     convergence = True
         #     break
@@ -258,12 +266,7 @@ if __name__ == '__main__':
     #     print('Has converged!')
     # else:
     #     print('Fail :(')
-    backward_pass()
-    forward_pass()
-    print(q_up)
-    print(psi_up)
-    print(phi_up)
-    print(phi_down)
-    print(psi_down)
-    print(q_down)
+
+    converge()
+
     print("done")

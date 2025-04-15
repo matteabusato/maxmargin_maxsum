@@ -68,6 +68,9 @@ weights_best = weights.copy()
 def delta_to_ind(delta):
     return (delta + N) // 2
 
+def ind_to_s(i):
+    return -1+i*2
+
 def normalize(array):
     max_value = np.max(array)
     return array - max_value 
@@ -163,18 +166,18 @@ def update_q_down():
         for (k,j) in enumerate(I_minus[mu]):
             k_tilde[j] = k
 
-        for si in range(2):
-            s = -1+2*si
+        for s_index in range(2):
+            s = ind_to_s(s_index)
             max1 = -np.inf
             for delta_under in POSSIBLE_DELTA_UNDERLINED:
                 index1 = delta_to_ind(delta_under + 1)
                 index2 = delta_to_ind(delta_under + s)
                 max1 = max(max1, psi_up[mu][index1] + psi_down[mu][index2])
-            m_plus[mu][si] = max1 
+            m_plus[mu][s_index] = max1
         M_plus[mu] = (m_plus[mu][1] - m_plus[mu][0]) / 2
 
-        for si in range(2):
-            s = -1+2*si
+        for s_index in range(2):
+            s = ind_to_s(s_index)
             max1 = -np.inf
             argmax1 = -N+1
             for delta_under in POSSIBLE_DELTA_UNDERLINED:
@@ -183,12 +186,12 @@ def update_q_down():
                 if max1 < psi_up[mu][index1] + psi_down[mu][index2]:
                     max1 = psi_up[mu][index1] + psi_down[mu][index2]
                     argmax1 = delta_under
-            delta_star[mu][si] = argmax1
+            delta_star[mu][s_index] = argmax1
 
-            index1 = delta_to_ind(delta_star[mu][si] - 1)
-            index2 = delta_to_ind(delta_star[mu][si] + s)
-            m_minus[mu][si] = max1
-            k_star[mu][si] = (delta_star[mu][si] - delta_tilde[mu] - 1) // 2
+            index1 = delta_to_ind(delta_star[mu][s_index] - 1)
+            index2 = delta_to_ind(delta_star[mu][s_index] + s)
+            m_minus[mu][s_index] = max1
+            k_star[mu][s_index] = (delta_star[mu][s_index] - delta_tilde[mu] - 1) // 2
         M_minus[mu] = (m_minus[mu][1] - m_minus[mu][0]) / 2
 
         for j in U_plus[mu]:
@@ -198,17 +201,17 @@ def update_q_down():
                 q_down[j][mu] = patterns[mu][j] * M_minus[mu]
             else:
                 m_hat = np.zeros(2)
-                for si in range(2):
-                    s = -1+2*si
+                for s_index in range(2):
+                    s = ind_to_s(s_index)
                     max1 = -np.inf
-                    for k in range(1,k_star[mu][si]+1):
+                    for k in range(1,k_star[mu][s_index]+1):
                         index1 = delta_to_ind(delta_tilde[mu] + 2*k)
                         index2 = delta_to_ind(delta_tilde[mu] + 2*k + 1 + s)
-                        part_sum = psi_up[mu][index1] + psi_down[mu][index2]
+                        temp_sum = psi_up[mu][index1] + psi_down[mu][index2]
                         if k >= k_tilde[j]:
-                            part_sum -= 2*(np.abs(q_up[I_minus[mu][k+1]][mu]) - np.abs(q_up[j][mu]))
-                        max1 = max(max1, part_sum)
-                    m_hat[si] = max1 - np.abs(q_up[j][mu])
+                            temp_sum -= 2*(q_up[I_minus[mu][k+1]][mu].abs() - q_up[j][mu].abs())
+                        max1 = max(max1, temp_sum)
+                    m_hat[s_index] = max1 - q_up[j][mu].abs()
                 M_hat = (m_hat[1] - m_hat[0]) / 2
                 q_down[j][mu] = patterns[mu][j] * M_hat
 
@@ -282,8 +285,6 @@ def update_psi_up():
             delta_index -= 1
             psi_temp -= 2*q_up[i][mu].abs()
             psi_up[mu][delta_index] = psi_temp
-
-            #
  
     #NORMALIZE ( already normalized )
     # psi_up = psi_up - np.sum(np.abs(q_up.T[mu]))

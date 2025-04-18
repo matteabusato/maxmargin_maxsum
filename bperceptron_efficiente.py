@@ -204,9 +204,12 @@ def update_q_down():
                 m_hat = np.zeros(2)
                 for s_index in range(2): 
                     s = ind_to_s(s_index)
-                    max1 = -np.inf ####
 
-                    for k in range(int(k_star[mu][s_index])):
+                    index1 = delta_to_ind(delta_tilde[mu])
+                    index2 = delta_to_ind(delta_tilde[mu] + 1 + s)
+                    max1 = psi_up[mu][index1] + psi_down[mu][index2]
+
+                    for k in range(1, int(k_star[mu][s_index])):
                         index1 = delta_to_ind(delta_tilde[mu] + 2*k)
                         index2 = delta_to_ind(delta_tilde[mu] + 2*k + 1 + s)
                         temp_sum = psi_up[mu][index1] + psi_down[mu][index2]
@@ -215,7 +218,6 @@ def update_q_down():
                         max1 = max(max1, temp_sum)
                     m_hat[s_index] = max1 - np.abs(q_up[j][mu])
 
-                print(m_hat[1], m_hat[0])
                 M_hat = (m_hat[1] - m_hat[0]) / 2
                 q_down[j][mu] = patterns[mu][j] * M_hat
 

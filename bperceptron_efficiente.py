@@ -5,7 +5,7 @@ import itertools
 N = 5    # dimension of patterns
 M = 3    # number of patterns M = alpha * N
 THRESHOLD = 1e-4
-ITERATIONS = 10
+ITERATIONS = 2
 POSSIBLE_DELTA_MUS = [-N+i*2 for i in range(N+1)]
 POSSIBLE_DELTA_UNDERLINED = [-N+1+i*2 for i in range(N)]
 POSSIBLE_DELTA_MUS_SETS = list(itertools.product(POSSIBLE_DELTA_MUS, repeat=M))
@@ -66,7 +66,7 @@ weights_best = weights.copy()
 # USEFUL FUNCTIONS
 
 def delta_to_ind(delta):
-    return (delta + N) // 2
+    return int((delta + N) // 2)
 
 def ind_to_s(i):
     return -1+i*2
@@ -163,8 +163,9 @@ def update_q_down():
     global k_star
     for mu in range(M):
         k_tilde = np.array([-1]*N)
-        for (k,j) in enumerate(I_minus[mu]):
-            k_tilde[j] = k
+        if I_minus[mu] is not None:
+            for (k,j) in enumerate(I_minus[mu]):
+                k_tilde[j] = k
 
         for s_index in range(2):
             s = ind_to_s(s_index)
@@ -201,17 +202,20 @@ def update_q_down():
                 q_down[j][mu] = patterns[mu][j] * M_minus[mu]
             else:
                 m_hat = np.zeros(2)
-                for s_index in range(2):
+                for s_index in range(2): 
                     s = ind_to_s(s_index)
-                    max1 = -np.inf
-                    for k in range(1,k_star[mu][s_index]+1):
+                    max1 = -np.inf ####
+
+                    for k in range(int(k_star[mu][s_index])):
                         index1 = delta_to_ind(delta_tilde[mu] + 2*k)
                         index2 = delta_to_ind(delta_tilde[mu] + 2*k + 1 + s)
                         temp_sum = psi_up[mu][index1] + psi_down[mu][index2]
-                        if k >= k_tilde[j]:
-                            temp_sum -= 2*(q_up[I_minus[mu][k+1]][mu].abs() - q_up[j][mu].abs())
+                        if k > k_tilde[j]:
+                            temp_sum -= 2*(np.abs(q_up[I_minus[mu][k]][mu]) - np.abs(q_up[j][mu]))
                         max1 = max(max1, temp_sum)
-                    m_hat[s_index] = max1 - q_up[j][mu].abs()
+                    m_hat[s_index] = max1 - np.abs(q_up[j][mu])
+
+                print(m_hat[1], m_hat[0])
                 M_hat = (m_hat[1] - m_hat[0]) / 2
                 q_down[j][mu] = patterns[mu][j] * M_hat
 
@@ -267,24 +271,26 @@ def update_psi_up():
         delta_index_tilde = delta_to_ind(delta_tilde[mu])
         psi_up[mu][delta_index_tilde] = 0.0 #psi_up_tilde
 
-        U_plus[mu] = np.array([i for i in range(N) if patterns[mu][i] == sign_num(q_up[i][mu])]).astype(int)
-        U_minus[mu] = np.array([i for i in range(N) if patterns[mu][i] != sign_num(q_up[i][mu])]).astype(int)
-        I_plus[mu] = U_plus[mu].copy().sort(key=lambda i: q_up[i][mu].abs())
-        I_minus[mu] = U_minus[mu].copy().sort(key=lambda i: q_up[i][mu].abs())
+        U_plus[mu] = [i for i in range(N) if patterns[mu][i] == sign_num(q_up[i][mu])]
+        U_minus[mu] = [i for i in range(N) if patterns[mu][i] != sign_num(q_up[i][mu])]
+        I_plus[mu] = sorted(U_plus[mu].copy(),key=lambda i: np.abs(q_up[i][mu]))
+        I_minus[mu] = sorted(U_minus[mu].copy(),key=lambda i: np.abs(q_up[i][mu]))
 
         psi_temp = 0.0 #psi_up_tilde
         delta_index = delta_index_tilde
-        for i in I_minus[mu]:
-            delta_index += 1
-            psi_temp -= 2*q_up[i][mu].abs()
-            psi_up[mu][delta_index] = psi_temp
+        if I_minus[mu] is not None:
+            for i in I_minus[mu]:
+                delta_index += 1
+                psi_temp -= np.abs(2*q_up[i][mu])
+                psi_up[mu][delta_index] = psi_temp
 
         psi_temp = 0.0 #psi_up_tilde
         delta_index = delta_index_tilde
-        for i in I_plus[mu]:
-            delta_index -= 1
-            psi_temp -= 2*q_up[i][mu].abs()
-            psi_up[mu][delta_index] = psi_temp
+        if I_plus[mu] is not None:
+            for i in I_plus[mu]:
+                delta_index -= 1
+                psi_temp -= 2*np.abs(q_up[i][mu])
+                psi_up[mu][delta_index] = psi_temp
  
     #NORMALIZE ( already normalized )
     # psi_up = psi_up - np.sum(np.abs(q_up.T[mu]))

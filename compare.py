@@ -127,6 +127,16 @@ def update_phi_down():
         case 1: # for exponential phi down
             pass
 
+def update_phi_down2():
+    global phi_down
+    match SETTING_PHI_DOWN:
+        case 0:
+            delta = 1 / N
+            for i in range(N+1):
+                phi_down[i] = -1 + delta*i
+        case 1: # for exponential phi down
+            pass
+
 # ----------------------
 
 def update_psi_down():
@@ -151,6 +161,29 @@ def update_ipsilon():
     for mu in range(M):
         for delta_index in range(N+1):
             ipsilon[mu][delta_index] = sum(xi.T[delta_index]) - xi[mu][delta_index] + phi_down[delta_index]
+
+def update_psi_down2():
+    global psi_down
+    for mu in range(M):
+        for delta_mu in POSSIBLE_DELTA_MUS:
+            index_delta_mu = delta_to_ind(delta_mu)
+            max1 = -np.inf
+            for delta_star in POSSIBLE_DELTA_MUS[:index_delta_mu + 1]:
+                index_delta_star = delta_to_ind(delta_star)
+                max2 = -np.inf
+                for delta_nu_set in POSSIBLE_DELTA_MUS_SETS:
+                    if min(delta_nu_set) == delta_star:
+                        temp_sum = 0
+                        for nu in range(M):
+                            if nu != mu:
+                                temp_index = delta_to_ind(delta_nu_set[nu])
+                                temp_sum += psi_up[nu][temp_index]
+                        max2 = max(max2, temp_sum)
+                max1 = max(max1, max2 + phi_down[index_delta_star])
+            psi_down[mu][index_delta_mu] = max1
+
+    #NORMALIZE
+    psi_down = normalize(psi_down)
 
 # ----------------------
 
@@ -222,6 +255,38 @@ def update_q_down():
                 M_hat = (m_hat[1] - m_hat[0]) / 2
                 q_down[j][mu] = patterns[mu][j] * M_hat
 
+def update_q_down2():
+    global q_down
+    for mu in range(M):
+        for i in range(N):
+            update_q_down_pos(i,mu)
+            update_q_down_neg(i,mu)
+            q_down[i][mu] = (q_down_pos[i][mu] - q_down_neg[i][mu]) / 2
+
+def update_q_down_pos(i,mu):
+    global q_down_pos
+    max1 = -np.inf
+    for delta in POSSIBLE_DELTA_MUS:
+        index1 = delta_to_ind(delta)
+        max2 = -np.inf
+        for poss_weights in POSSIBLE_WEIGHTS:
+            if (np.dot(poss_weights, patterns[mu]) - poss_weights[i]*patterns[mu][i] + (+1)*patterns[mu][i]) == delta:
+                max2 = max(max2, np.dot(poss_weights, q_up.T[mu]) - poss_weights[i]*q_up[i][mu])
+        max1 = max(max1, max2 + psi_down[mu][index1])
+    q_down_pos[i][mu] = max1
+
+def update_q_down_neg(i,mu):
+    global q_down_neg
+    max1 = -np.inf
+    for delta in POSSIBLE_DELTA_MUS:
+        index1 = delta_to_ind(delta)
+        max2 = -np.inf
+        for poss_weights in POSSIBLE_WEIGHTS:
+            if (np.dot(poss_weights, patterns[mu]) - poss_weights[i]*patterns[mu][i] + (-1)*patterns[mu][i]) == delta:
+                max2 = max(max2, np.dot(poss_weights, q_up.T[mu]) - poss_weights[i]*q_up[i][mu])
+        max1 = max(max1, max2 + psi_down[mu][index1])
+    q_down_neg[i][mu] = max1
+
 # ----------------------
 
 def backward_pass():
@@ -257,6 +322,24 @@ def update_gamma():
     for mu in range(M):
         for delta_index in range(N+1):
             gamma[mu][delta_index] = psi_up[mu][delta_index] - xi[mu][delta_index]
+
+
+def update_phi_up2():
+    global phi_up
+    for delta_star in POSSIBLE_DELTA_MUS:
+        index_delta_star = delta_to_ind(delta_star)
+        max1 = -np.inf
+        for delta_mu_set in POSSIBLE_DELTA_MUS_SETS:
+            if min(delta_mu_set) == delta_star:
+                temp_sum = 0
+                for mu in range(M):
+                    temp_index = delta_to_ind(delta_mu_set[mu])
+                    temp_sum += psi_up[mu][temp_index]
+                max1 = max(max1, temp_sum)
+        phi_up[index_delta_star] = max1
+
+    #NORMALIZE
+    phi_up = normalize(phi_up)
 
 # ----------------------
 
@@ -298,9 +381,30 @@ def update_psi_up():
     #NORMALIZE ( already normalized )
     # psi_up = psi_up - np.sum(np.abs(q_up.T[mu]))
 
+def update_psi_up2():
+    global psi_up
+    for mu in range(M):
+        for delta in POSSIBLE_DELTA_MUS:
+            delta_index = delta_to_ind(delta)
+            max1 = -np.inf
+            for poss_weights in POSSIBLE_WEIGHTS:
+                if np.dot(poss_weights, patterns[mu]) == delta:
+                    max1 = max(max1, np.dot(poss_weights, q_up.T[mu]))
+            psi_up[mu][delta_index] = max1
+
+        #NORMALIZE
+        psi_up[mu] = normalize(psi_up[mu])
+
 # ----------------------
 
 def update_q_up():
+    global q_up
+    for i in range(N):
+        total_q_down = sum(q_down[i])
+        for mu in range(M):
+            q_up[i][mu] = total_q_down - q_down[i][mu]
+
+def update_q_up2():
     global q_up
     for i in range(N):
         total_q_down = sum(q_down[i])
@@ -317,15 +421,6 @@ def forward_pass():
 
 # ------------------------------------------------------------------
 # CONVERGENCE ITERATIONS
-
-def check_convergence():
-    check_differences()
-    check_weights()
-
-    if max(COUNTERS) >= 3:
-        return True
-    
-    return False
 
 def check_differences():
     differences = []
@@ -361,23 +456,21 @@ def converge():
         print("q_down: ", q_down)
         print("weights: ", weights)
         print()
-
-        # if check_convergence():
-        #     convergence = True
-        #     break
     
     return convergence
     
     
 # ------------------------------------------------------------------
 # MAIN
-def test():
-    global q_up
-    global psi_up
-    global psi_down
-    q_up = np.random.randint(-100, 100, (N, M))
-    psi_up = np.random.randint(-100, 100, (M, N+1))
-    psi_down = np.random.randint(-100, 100, (M, N+1))
+  
+if __name__ == '__main__':
+    # q_up = np.random.randint(-100, 100, (N, M))
+    # psi_up = np.random.randint(-100, 100, (M, N+1))
+    # phi_up = np.random.randint(-100, 100, (N+1))
+
+    # phi_down = np.random.randint(-100, 100, (N+1))
+    # psi_down = np.random.randint(-100, 100, (M, N+1))
+    # q_down = np.zeros((N,M))
 
     print("The patterns are: ")
     print(patterns)
@@ -385,31 +478,32 @@ def test():
     print("The weights are: ")
     print(weights)
     print()
-    update_psi_up()
-    print("The messages are: ")
-    print("q_up: ", q_up)
-    print("psi_up: ", psi_up)
-    print("phi_up: ", phi_up)
-    print("phi_down: ", phi_down)
-    print("psi_down: ", psi_down)
-    print("q_down: ", q_down)
-    update_q_down()
-    print("The messages are: ")
-    print("q_up: ", q_up)
-    print("psi_up: ", psi_up)
-    print("phi_up: ", phi_up)
-    print("phi_down: ", phi_down)
-    print("psi_down: ", psi_down)
-    print("q_down: ", q_down)
-  
 
-if __name__ == '__main__':
-    # if converge():
-    #     print('Has converged!')
-    # else:
-    #     print('Fail')
 
-    # test()
-    print(patterns)
-    converge()
-    print("done")
+    # print("The messages are: ")
+    # print("q_up: ", q_up)
+    # print("psi_up: ", psi_up)
+    # print("phi_up: ", phi_up)
+    # print("phi_down: ", phi_down)
+    # print("psi_down: ", psi_down)
+    # print("q_down: ", q_down)
+
+    for j in range(2):
+        np.random.seed(12+j)
+        for i in range(ITERATIONS):
+
+            forward_pass()
+            update_phi_down()
+            update_psi_down()
+
+            update_q_down()
+            test1 = q_down.copy()
+            update_q_down2()
+            test2 = q_down.copy()
+
+            update_weights()
+
+            update_weights()
+            print("q_down messages: ")
+            print("test1: ", test1)
+            print("test2", test2)

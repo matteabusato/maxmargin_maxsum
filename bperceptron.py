@@ -1,11 +1,12 @@
 import numpy as np
 import itertools
+np.random.seed(12)
 
 # constants for testing
-N = 3    # dimension of patterns
-M = 2    # number of patterns M = alpha * N
+N = 5    # dimension of patterns
+M = 3    # number of patterns M = alpha * N
 THRESHOLD = 1e-5
-ITERATIONS = 5
+ITERATIONS = 2
 POSSIBLE_DELTA_MUS = [-N+i*2 for i in range(N+1)]
 POSSIBLE_DELTA_MUS_SETS = list(itertools.product(POSSIBLE_DELTA_MUS, repeat=M))
 POSSIBLE_WEIGHTS = list(itertools.product([-1, 1], repeat=N))
@@ -267,6 +268,6 @@ if __name__ == '__main__':
     # else:
     #     print('Fail :(')
 
+    print(patterns)
     converge()
-
     print("done")

@@ -81,6 +81,51 @@ def update_weights():
     for i in range(N):
         weights[i] = 1 if np.sign(q_singlesite[i]) >= 0 else -1
 
+# ------------------------------------------------------------------
+# FORWARD PASS
+
+def update_phi_up():
+    global phi_up
+    for delta_star in POSSIBLE_DELTA_MUS:
+        index_delta_star = delta_to_ind(delta_star)
+        max1 = -np.inf
+        for delta_mu_set in POSSIBLE_DELTA_MUS_SETS:
+            if min(delta_mu_set) == delta_star:
+                temp_sum = 0
+                for mu in range(M):
+                    temp_index = delta_to_ind(delta_mu_set[mu])
+                    temp_sum += psi_up[mu][temp_index]
+                max1 = max(max1, temp_sum)
+        phi_up[index_delta_star] = max1
+
+    #NORMALIZE
+    phi_up = normalize(phi_up)
+
+def update_psi_up():
+    global psi_up
+    for mu in range(M):
+        for delta in POSSIBLE_DELTA_MUS:
+            delta_index = delta_to_ind(delta)
+            max1 = -np.inf
+            for poss_weights in POSSIBLE_WEIGHTS:
+                if np.dot(poss_weights, patterns[mu]) == delta:
+                    max1 = max(max1, np.dot(poss_weights, q_up.T[mu]))
+            psi_up[mu][delta_index] = max1
+
+    #NORMALIZE
+    psi_up = normalize(psi_up)
+                        
+def update_q_up():
+    global q_up
+    for i in range(N):
+        total_q_down = sum(q_down[i])
+        for mu in range(M):
+            q_up[i][mu] = total_q_down - q_down[i][mu]
+
+def forward_pass():
+    update_q_up()
+    update_psi_up()
+    update_phi_up()
 
 # ------------------------------------------------------------------
 # BACKWARD PASS
@@ -155,54 +200,6 @@ def backward_pass():
     update_psi_down()
     update_q_down()
 
-
-# ------------------------------------------------------------------
-# FORWARD PASS
-
-def update_phi_up():
-    global phi_up
-    for delta_star in POSSIBLE_DELTA_MUS:
-        index_delta_star = delta_to_ind(delta_star)
-        max1 = -np.inf
-        for delta_mu_set in POSSIBLE_DELTA_MUS_SETS:
-            if min(delta_mu_set) == delta_star:
-                temp_sum = 0
-                for mu in range(M):
-                    temp_index = delta_to_ind(delta_mu_set[mu])
-                    temp_sum += psi_up[mu][temp_index]
-                max1 = max(max1, temp_sum)
-        phi_up[index_delta_star] = max1
-
-    #NORMALIZE
-    phi_up = normalize(phi_up)
-
-def update_psi_up():
-    global psi_up
-    for mu in range(M):
-        for delta in POSSIBLE_DELTA_MUS:
-            delta_index = delta_to_ind(delta)
-            max1 = -np.inf
-            for poss_weights in POSSIBLE_WEIGHTS:
-                if np.dot(poss_weights, patterns[mu]) == delta:
-                    max1 = max(max1, np.dot(poss_weights, q_up.T[mu]))
-            psi_up[mu][delta_index] = max1
-
-    #NORMALIZE
-    psi_up = normalize(psi_up)
-                        
-def update_q_up():
-    global q_up
-    for i in range(N):
-        total_q_down = sum(q_down[i])
-        for mu in range(M):
-            q_up[i][mu] = total_q_down - q_down[i][mu]
-
-def forward_pass():
-    update_q_up()
-    update_psi_up()
-    update_phi_up()
-
-
 # ------------------------------------------------------------------
 # CONVERGENCE ITERATIONS
 
@@ -258,7 +255,6 @@ def converge():
         #     break
     
     return convergence
-    
     
 # ------------------------------------------------------------------
 # MAIN

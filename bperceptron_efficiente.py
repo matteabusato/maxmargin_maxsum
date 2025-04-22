@@ -210,7 +210,7 @@ def update_q_down():
                     index2 = delta_to_ind(delta_tilde[mu] + 1 + s)
                     max1 = psi_up[mu][index1] + psi_down[mu][index2]
 
-                    for k in range(1, int(k_star[mu][s_index])):
+                    for k in range(1, int(k_star[mu][s_index])+1):
                         index1 = delta_to_ind(delta_tilde[mu] + 2*k)
                         index2 = delta_to_ind(delta_tilde[mu] + 2*k + 1 + s)
                         temp_sum = psi_up[mu][index1] + psi_down[mu][index2]
@@ -385,7 +385,6 @@ def test():
     print("The weights are: ")
     print(weights)
     print()
-    update_psi_up()
     print("The messages are: ")
     print("q_up: ", q_up)
     print("psi_up: ", psi_up)

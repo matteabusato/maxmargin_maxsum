@@ -243,7 +243,7 @@ def update_q_down():
                     index2 = delta_to_ind(delta_tilde[mu] + 1 + s)
                     max1 = psi_up[mu][index1] + psi_down[mu][index2]
 
-                    for k in range(1, int(k_star[mu][s_index])):
+                    for k in range(1, int(k_star[mu][s_index])+1):
                         index1 = delta_to_ind(delta_tilde[mu] + 2*k)
                         index2 = delta_to_ind(delta_tilde[mu] + 2*k + 1 + s)
                         temp_sum = psi_up[mu][index1] + psi_down[mu][index2]
@@ -293,6 +293,11 @@ def backward_pass():
     update_phi_down()
     update_psi_down()
     update_q_down()
+
+def backward_pass2():
+    update_phi_down2()
+    update_psi_down2()
+    update_q_down2()
 
 
 # ------------------------------------------------------------------
@@ -353,16 +358,16 @@ def update_psi_up():
     for mu in range(M):
         weights_tilde = sign_arr(q_up.T[mu])
         delta_tilde[mu] = int(np.dot(patterns[mu], weights_tilde))
-        #psi_up_tilde = np.sum(np.abs(q_up.T[mu]))
+        psi_up_tilde = np.sum(np.abs(q_up.T[mu]))
         delta_index_tilde = delta_to_ind(delta_tilde[mu])
-        psi_up[mu][delta_index_tilde] = 0.0 #psi_up_tilde
+        psi_up[mu][delta_index_tilde] = psi_up_tilde
 
         U_plus[mu] = [i for i in range(N) if patterns[mu][i] == sign_num(q_up[i][mu])]
         U_minus[mu] = [i for i in range(N) if patterns[mu][i] != sign_num(q_up[i][mu])]
         I_plus[mu] = sorted(U_plus[mu].copy(),key=lambda i: np.abs(q_up[i][mu]))
         I_minus[mu] = sorted(U_minus[mu].copy(),key=lambda i: np.abs(q_up[i][mu]))
 
-        psi_temp = 0.0 #psi_up_tilde
+        psi_temp = psi_up_tilde
         delta_index = delta_index_tilde
         if I_minus[mu] is not None:
             for i in I_minus[mu]:
@@ -370,7 +375,7 @@ def update_psi_up():
                 psi_temp -= np.abs(2*q_up[i][mu])
                 psi_up[mu][delta_index] = psi_temp
 
-        psi_temp = 0.0 #psi_up_tilde
+        psi_temp = psi_up_tilde
         delta_index = delta_index_tilde
         if I_plus[mu] is not None:
             for i in I_plus[mu]:
@@ -378,8 +383,8 @@ def update_psi_up():
                 psi_temp -= 2*np.abs(q_up[i][mu])
                 psi_up[mu][delta_index] = psi_temp
  
-    #NORMALIZE ( already normalized )
-    # psi_up = psi_up - np.sum(np.abs(q_up.T[mu]))
+    #NORMALIZE
+    psi_up = psi_up - np.sum(np.abs(q_up.T[mu]))
 
 def update_psi_up2():
     global psi_up
@@ -393,7 +398,7 @@ def update_psi_up2():
             psi_up[mu][delta_index] = max1
 
         #NORMALIZE
-        psi_up[mu] = normalize(psi_up[mu])
+    psi_up[mu] = normalize(psi_up[mu])
 
 # ----------------------
 
@@ -418,7 +423,10 @@ def forward_pass():
     update_psi_up()
     update_phi_up()
 
-
+def forward_pass2():
+    update_q_up2()
+    update_psi_up2()
+    update_phi_up2()
 # ------------------------------------------------------------------
 # CONVERGENCE ITERATIONS
 
@@ -479,7 +487,6 @@ if __name__ == '__main__':
     print(weights)
     print()
 
-
     # print("The messages are: ")
     # print("q_up: ", q_up)
     # print("psi_up: ", psi_up)
@@ -491,19 +498,53 @@ if __name__ == '__main__':
     for j in range(2):
         np.random.seed(12+j)
         for i in range(ITERATIONS):
+            
+            update_q_up()
+            test1 = q_up.copy()
+            update_q_up2()
+            test2 = q_up.copy()
+            if max(test1-test2)>10e-5:
+                print("test1: ", test1)
+                print("test2", test2)
 
-            forward_pass()
+            update_psi_up()
+            test1 = psi_up.copy()
+            update_psi_up2()
+            test2 = psi_up.copy()
+            if max(test1-test2)>10e-5:
+                print("test1: ", test1)
+                print("test2", test2)
+
+            update_phi_up()
+            test1 = phi_up.copy()
+            update_phi_up2()
+            test2 = phi_up.copy()
+            if max(test1-test2)>10e-5:
+                print("test1: ", test1)
+                print("test2", test2)
+
             update_phi_down()
+            test1 = phi_down.copy()
+            update_phi_down2()
+            test2 = phi_down.copy()
+            if max(test1-test2)>10e-5:
+                print("test1: ", test1)
+                print("test2", test2)
+
             update_psi_down()
+            test1 = psi_down.copy()
+            update_psi_down2()
+            test2 = psi_down.copy()
+            if max((test1-test2)).all>10e-5:
+                print("test1: ", test1)
+                print("test2", test2)
 
             update_q_down()
             test1 = q_down.copy()
             update_q_down2()
             test2 = q_down.copy()
+            if max(test1-test2)>10e-5:
+                print("test1: ", test1)
+                print("test2", test2)
 
             update_weights()
-
-            update_weights()
-            print("q_down messages: ")
-            print("test1: ", test1)
-            print("test2", test2)

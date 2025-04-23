@@ -1,14 +1,14 @@
 import numpy as np
-np.random.seed(12)
+# np.random.seed(12)
 
 # constants for testing
-N = 5    # dimension of patterns
-M = 3    # number of patterns M = alpha * N
+N = 10    # dimension of patterns
+M = 7    # number of patterns M = alpha * N
 THRESHOLD = 1e-4
-ITERATIONS = 2
+ITERATIONS = 1000
 POSSIBLE_DELTA_UNDERLINED = [-N+1+i*2 for i in range(N)]
 SETTING_PHI_DOWN = 0
-COUNTERS = np.zeros(3)
+COUNTER = 0
 
 # data structures for weights and patterns
 weights = np.random.choice([-1, 1], size=N)
@@ -53,6 +53,8 @@ q_down_old = np.zeros((N,M))
 
 weights_old = np.zeros(N)
 weights_best = weights.copy()
+delta_star_max = -N
+delta_star_convergence = -N
 
 # ------------------------------------------------------------------
 # USEFUL FUNCTIONS
@@ -82,12 +84,21 @@ def store():
     global phi_up_old
     global psi_down_old
     global q_down_old
+    global weights_old
+    global weights_best
+    global delta_star_max
 
     q_up_old = q_up.copy()
     psi_up_old = psi_up.copy()
     phi_up_old = phi_up.copy()
     psi_down_old = psi_down.copy()
     q_down_old = q_down.copy()
+    weights_old = weights.copy()
+
+    current_delta_star = min(np.dot(weights, patterns.T))
+    if current_delta_star > delta_star_max:
+        delta_star_max = current_delta_star
+        weights_best = weights.copy()
 
 # ------------------------------------------------------------------
 # SINGLE-SITE QUANTITIES and WEIGHTS UPDATES
@@ -306,95 +317,59 @@ def backward_pass():
 # CONVERGENCE ITERATIONS
 
 def check_convergence():
-    check_differences()
+    global COUNTER
     check_weights()
 
-    if max(COUNTERS) >= 3:
+    if COUNTER >= 10:
         return True
     
     return False
 
-def check_differences():
-    differences = []
-    differences.append(max(abs(q_up - q_up_old)))
-    differences.append(max(abs(psi_up - psi_up_old)))
-    differences.append(max(abs(phi_up - phi_up_old)))
-    differences.append(max(abs(psi_down - psi_down_old)))
-    differences.append(max(abs(q_down - q_down_old)))
-    max_delta = max(differences)
-
-    if max_delta < THRESHOLD:
-        COUNTERS[0] += 1
-
 def check_weights():
-    if weights == weights_old:
-        COUNTERS[1] += 1
+    global COUNTER
+    if np.array_equal(weights, weights_old):
+        COUNTER += 1
+    else:
+        COUNTER = 0
 
 def converge():
-    convergence = False
+    global delta_star_convergence
 
+    convergence = False
     for i in range(ITERATIONS):
         forward_pass()
         backward_pass()
-        store()
         update_weights()
 
-        print("ITERATION: ", i)
-        print("q_up: ", q_up)
-        print("psi_up: ", psi_up)
-        print("phi_up: ", phi_up)
-        print("phi_down: ", phi_down)
-        print("psi_down: ", psi_down)
-        print("q_down: ", q_down)
-        print("weights: ", weights)
-        print()
+        print("ITERATION: ", i, "weights: ", weights)
 
-        # if check_convergence():
-        #     convergence = True
-        #     break
+        if check_convergence():
+            convergence = True
+            delta_star_convergence = min(np.dot(weights, patterns.T))
+            break
+
+        store()
     
     return convergence
     
 # ------------------------------------------------------------------
 # MAIN
-def test():
-    global q_up
-    global psi_up
-    global psi_down
-    q_up = np.random.randint(-100, 100, (N, M))
-    psi_up = np.random.randint(-100, 100, (M, N+1))
-    psi_down = np.random.randint(-100, 100, (M, N+1))
-
-    print("The patterns are: ")
-    print(patterns)
-    print()
-    print("The weights are: ")
-    print(weights)
-    print()
-    print("The messages are: ")
-    print("q_up: ", q_up)
-    print("psi_up: ", psi_up)
-    print("phi_up: ", phi_up)
-    print("phi_down: ", phi_down)
-    print("psi_down: ", psi_down)
-    print("q_down: ", q_down)
-    update_q_down()
-    print("The messages are: ")
-    print("q_up: ", q_up)
-    print("psi_up: ", psi_up)
-    print("phi_up: ", phi_up)
-    print("phi_down: ", phi_down)
-    print("psi_down: ", psi_down)
-    print("q_down: ", q_down)
-  
 
 if __name__ == '__main__':
-    # if converge():
-    #     print('Has converged!')
-    # else:
-    #     print('Fail')
+    with open('results.txt', 'a') as f:
+        for random_seed in range(42, 43, 5):
+            np.random.seed(random_seed)
 
-    # test()
-    print(patterns)
-    converge()
-    print("done")
+            print("Patterns: ", patterns)
+            converged = False
+            if converge():
+                print("Has converged")
+                print("delta_star_max: ", delta_star_max)
+                print("delta_star_convergence: ", delta_star_convergence)
+                converged = True
+            else:
+                print("Has NOT converged")
+                print("delta_star_max: ", delta_star_max)
+
+            f.write(f"{N}  {M}  {M/N}  {converged}  {delta_star_max}  {delta_star_convergence}  {random_seed}  {ITERATIONS}\n")
+            f.flush()

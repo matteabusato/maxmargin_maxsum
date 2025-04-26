@@ -1,9 +1,9 @@
 import numpy as np
-# np.random.seed(12)
+np.random.seed(139)
 
 # constants for testing
-N = 10    # dimension of patterns
-M = 7    # number of patterns M = alpha * N
+N = 101    # dimension of patterns
+M = 30    # number of patterns M = alpha * N
 THRESHOLD = 1e-4
 ITERATIONS = 1000
 POSSIBLE_DELTA_UNDERLINED = [-N+1+i*2 for i in range(N)]
@@ -357,19 +357,18 @@ def converge():
 
 if __name__ == '__main__':
     with open('results.txt', 'a') as f:
-        for random_seed in range(42, 43, 5):
-            np.random.seed(random_seed)
+        f.write(f"\n")
 
-            print("Patterns: ", patterns)
-            converged = False
-            if converge():
-                print("Has converged")
-                print("delta_star_max: ", delta_star_max)
-                print("delta_star_convergence: ", delta_star_convergence)
-                converged = True
-            else:
-                print("Has NOT converged")
-                print("delta_star_max: ", delta_star_max)
+        print("Patterns: ", patterns)
+        converged = False
+        if converge():
+            print("Has converged")
+            print("delta_star_max: ", delta_star_max)
+            print("delta_star_convergence: ", delta_star_convergence)
+            converged = True
+        else:
+            print("Has NOT converged")
+            print("delta_star_max: ", delta_star_max)
 
-            f.write(f"{N}  {M}  {M/N}  {converged}  {delta_star_max}  {delta_star_convergence}  {random_seed}  {ITERATIONS}\n")
-            f.flush()
+        f.write(f"{N}  {M}  {M/N}  {converged}  {delta_star_max}  {delta_star_convergence}  {112}  {ITERATIONS}\n")
+        f.flush()

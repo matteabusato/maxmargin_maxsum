@@ -1,0 +1,2 @@
+Results:
+N  M  Alpha  Max_Iterations  Converged  Iterations_To_Converge  Delta_max  Delta_convergence  Random_seed    

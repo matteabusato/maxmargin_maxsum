@@ -1,6 +1,5 @@
 Results:
-N  M  Alpha  Max_Iterations  Converged  Iterations_To_Converge  Delta_max  Delta_convergence  Random_seed    
-101  30  0.297029702970297  1000  False  1000  -7  -101  42
+N  M  Alpha  Max_Iterations  Converged  Iterations_To_Converge  Delta_max  Delta_convergence  Random_seed
 101  30  0.297029702970297  1000  False  1000  -7  -101  42
 101  30  0.297029702970297  1000  False  1000  -3  -101  47
 101  30  0.297029702970297  1000  False  1000  -1  -101  52
@@ -98,3 +97,9 @@ N  M  Alpha  Max_Iterations  Converged  Iterations_To_Converge  Delta_max  Delta
 101  30  0.297029702970297  1000  False  1000  -7  -101  512
 101  30  0.297029702970297  1000  False  1000  1  -101  517
 101  30  0.297029702970297  1000  False  1000  -1  -101  522
+101  30  0.297029702970297  1000  False  1000  5  -101  527
+101  30  0.297029702970297  1000  False  1000  1  -101  532
+101  30  0.297029702970297  1000  False  1000  -13  -101  537
+101  30  0.297029702970297  1000  False  1000  -1  -101  542
+101  30  0.297029702970297  1000  False  1000  9  -101  547
+101  30  0.297029702970297  1000  False  1000  5  -101  552

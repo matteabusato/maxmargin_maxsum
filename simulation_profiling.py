@@ -1,4 +1,7 @@
+import time
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 
 class Parameters:
     def __init__(self, N, M, THRESHOLD, iterations, setting_phi_down, setting_q, r):
@@ -9,6 +12,15 @@ class Parameters:
         self.setting_phi_down = setting_phi_down
         self.setting_q = setting_q
         self.r = r
+
+def timing_decorator(func):
+    def wrapper(self, *args, **kwargs):
+        start = time.perf_counter()
+        result = func(self, *args, **kwargs)
+        end = time.perf_counter()
+        print(f"Function {func.__name__} took {end - start:.6f} seconds")
+        return result
+    return wrapper
 
 class MaxSum:
     def __init__(self, param):
@@ -91,6 +103,7 @@ class MaxSum:
         x = np.asarray(x)
         return np.where(x >= 0, 1, -1)
     
+    @timing_decorator
     def store(self):
         self.q_up_old = np.copy(self.q_up)
         self.psi_up_old = np.copy(self.psi_up)
@@ -105,6 +118,7 @@ class MaxSum:
             self.delta_star_max = current_delta_star
             self.weights_best = self.weights.copy()
 
+    @timing_decorator
     def update_phi_up(self):
         self.update_xi()
         self.update_gamma()
@@ -113,12 +127,15 @@ class MaxSum:
         # NORMALIZE
         self.phi_up = self.normalize(self.phi_up)
 
+    @timing_decorator
     def update_xi(self):
         self.xi[:, :] = np.maximum.accumulate(self.psi_up[:, ::-1], axis=1)[:, ::-1].T
 
+    @timing_decorator
     def update_gamma(self):
         self.gamma[:, :] = self.psi_up.T - self.xi
 
+    @timing_decorator
     def update_psi_up(self):
         for mu in range(self.M):
             weights_tilde = self.sign_arr(self.q_up.T[mu])
@@ -151,12 +168,14 @@ class MaxSum:
             # NORMALIZE
             self.psi_up[mu] = self.psi_up[mu] - np.sum(np.abs(self.q_up.T[mu]))
 
+    @timing_decorator
     def update_q_up(self):
         self.q_up[:, :] = np.sum(self.q_down, axis=1, keepdims=True) - self.q_down
 
         if self.setting_q == 1:
             self.q_up += self.R * self.time * self.q_singlesite_old[:, np.newaxis]
 
+    @timing_decorator
     def update_phi_down(self):
         match self.setting_phi_down:
             case 0:  # linear spacing
@@ -174,6 +193,7 @@ class MaxSum:
                 exp_x_norm = (exp_x - exp_x[0]) / (exp_x[-1] - exp_x[0]) - 1
                 self.phi_down[:] = exp_x_norm
 
+    @timing_decorator
     def update_ipsilon(self):
         for mu in range(self.M):
             for delta_index in range(self.N + 1):
@@ -181,9 +201,11 @@ class MaxSum:
                     np.sum(self.xi[delta_index]) - self.xi[delta_index][mu] + self.phi_down[delta_index]
                 )
 
+    @timing_decorator
     def update_psi_down(self):
         self.update_ipsilon()
         
+        # Precompute max_gamma
         max_gamma = np.full((self.N + 1, self.M), -np.inf)
         for delta_star_index in range(self.N + 1):
             for mu in range(self.M):
@@ -201,15 +223,20 @@ class MaxSum:
 
         self.psi_down = self.normalize(self.psi_down)
 
+    @timing_decorator
     def update_q_down(self):
         for mu in range(self.M):
+            # Precompute abs(q_up[:, mu]) once per mu
             abs_q_up_mu = np.abs(self.q_up[:, mu])
 
-
+            # Precompute k_tilde[j] for each j in I_minus[mu]
             k_tilde = np.full(self.N, -1)
             for k, j in enumerate(self.I_minus[mu]):
                 k_tilde[j] = k
 
+            # --------------------
+            # Compute m_plus[mu]
+            # --------------------
             for s_index in range(2):
                 s = self.ind_to_s(s_index)
                 delta_under = np.array(self.POSSIBLE_DELTA_UNDERLINED)
@@ -221,6 +248,9 @@ class MaxSum:
 
             self.M_plus[mu] = (self.m_plus[mu][1] - self.m_plus[mu][0]) / 2
 
+            # --------------------
+            # Compute m_minus[mu], delta_star, k_star
+            # --------------------
             for s_index in range(2):
                 s = self.ind_to_s(s_index)
                 max1 = -np.inf
@@ -240,9 +270,15 @@ class MaxSum:
 
             self.M_minus[mu] = (self.m_minus[mu][1] - self.m_minus[mu][0]) / 2
 
+            # --------------------
+            # Update q_down for U_plus
+            # --------------------
             for j in self.U_plus[mu]:
                 self.q_down[j][mu] = self.patterns[mu][j] * self.M_plus[mu]
 
+            # --------------------
+            # Update q_down for U_minus
+            # --------------------
             I_minus_mu = self.I_minus[mu]
             k_star_max = max(self.k_star[mu])
 
@@ -277,11 +313,13 @@ class MaxSum:
                     M_hat = (m_hat[1] - m_hat[0]) / 2
                     self.q_down[j][mu] = self.patterns[mu][j] * M_hat
 
+    @timing_decorator
     def update_singlesite(self):
         self.q_singlesite[:] = np.sum(self.q_down, axis=1)
         if self.setting_q == 1:
             self.q_singlesite += self.R * self.time * self.q_singlesite_old
 
+    @timing_decorator
     def update_weights(self):
         self.update_singlesite()
         self.weights[:] = self.sign_arr(self.q_singlesite)
@@ -343,13 +381,13 @@ class MaxSum:
 
         return convergence
     
-def run_simulations(spd, sq):
+def run_simulations():
     N = 1001
     M = 300
     THRESHOLD = 1e-4
     ITERATIONS = 10000
-    SETTING_PHI_DOWN = spd   # 0: linear, 1: squared, 2: exponential
-    SETTING_Q = sq          # 0: non-forced, 1: forced
+    SETTING_PHI_DOWN = 0   # 0: linear, 1: squared, 2: exponential
+    SETTING_Q = 0          # 0: non-forced, 1: forced
     R = 0.01
 
     file_name = "new_results/results_"
@@ -366,7 +404,7 @@ def run_simulations(spd, sq):
     print(file_name)
 
     for i in range(100):
-        seed = i
+        seed = i * 5
         np.random.seed(seed)
 
         param = Parameters(
@@ -386,9 +424,4 @@ def run_simulations(spd, sq):
             f.flush()
 
 if __name__ == "__main__":
-    run_simulations(0, 1)
-    run_simulations(1, 1)
-    run_simulations(2, 1)
-    run_simulations(0, 0)
-    run_simulations(1, 0)
-    run_simulations(2, 0)
+    run_simulations()

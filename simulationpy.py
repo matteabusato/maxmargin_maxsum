@@ -174,13 +174,6 @@ class MaxSum:
                 exp_x_norm = (exp_x - exp_x[0]) / (exp_x[-1] - exp_x[0]) - 1
                 self.phi_down[:] = exp_x_norm
 
-    def update_ipsilon(self):
-        for mu in range(self.M):
-            for delta_index in range(self.N + 1):
-                self.ipsilon[mu][delta_index] = (
-                    np.sum(self.xi[delta_index]) - self.xi[delta_index][mu] + self.phi_down[delta_index]
-                )
-
     def update_psi_down(self):
         self.update_ipsilon()
         
@@ -200,6 +193,11 @@ class MaxSum:
                 self.psi_down[mu][delta_mu_index] = max(max1, self.ipsilon[mu][delta_mu_index])
 
         self.psi_down = self.normalize(self.psi_down)
+
+    def update_ipsilon(self):
+        for mu in range(self.M):
+            for delta_index in range(self.N + 1):
+                self.ipsilon[mu][delta_index] = np.sum(self.xi[delta_index]) - self.xi[delta_index][mu] + self.phi_down[delta_index]
 
     def update_q_down(self):
         for mu in range(self.M):
@@ -288,7 +286,6 @@ class MaxSum:
 
     def check_convergence(self):
         self.check_weights()
-        # self.check_differences()  # Uncomment if you want to use it
 
         if self.COUNTERS[0] >= self.WEIGHTS_MAX_ITERATIONS:
             return True
@@ -345,12 +342,12 @@ class MaxSum:
     
 def run_simulations(spd, sq):
     N = 1001
-    M = 300
+    M = 350
     THRESHOLD = 1e-4
     ITERATIONS = 10000
     SETTING_PHI_DOWN = spd   # 0: linear, 1: squared, 2: exponential
     SETTING_Q = sq          # 0: non-forced, 1: forced
-    R = 0.01
+    R = 0.001
 
     file_name = "new_results/results_"
     if SETTING_Q == 0:
@@ -366,7 +363,7 @@ def run_simulations(spd, sq):
     print(file_name)
 
     for i in range(100):
-        seed = i
+        seed = i + 200
         np.random.seed(seed)
 
         param = Parameters(
@@ -386,9 +383,4 @@ def run_simulations(spd, sq):
             f.flush()
 
 if __name__ == "__main__":
-    run_simulations(0, 1)
     run_simulations(1, 1)
-    run_simulations(2, 1)
-    run_simulations(0, 0)
-    run_simulations(1, 0)
-    run_simulations(2, 0)

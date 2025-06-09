@@ -342,11 +342,7 @@ class MaxSum:
     
 def run_simulations(spd, sq):
     N = 1001
-<<<<<<< HEAD
     M = 500
-=======
-    M = 300
->>>>>>> c0e9afd860d78e49f5dd6187f21187f3e771f4b2
     THRESHOLD = 1e-4
     ITERATIONS = 10000
     SETTING_PHI_DOWN = spd   # 0: linear, 1: squared, 2: exponential
@@ -367,11 +363,7 @@ def run_simulations(spd, sq):
     print(file_name)
 
     for i in range(100):
-<<<<<<< HEAD
         seed = i + 500
-=======
-        seed = i + 3 + 100*SETTING_PHI_DOWN +(1-SETTING_Q)*1000
->>>>>>> c0e9afd860d78e49f5dd6187f21187f3e771f4b2
         np.random.seed(seed)
 
         param = Parameters(

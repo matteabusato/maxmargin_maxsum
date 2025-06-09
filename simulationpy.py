@@ -349,7 +349,7 @@ def run_simulations(spd, sq):
     SETTING_Q = sq          # 0: non-forced, 1: forced
     R = 0.001
 
-    file_name = "new_results/results_"
+    file_name = "convergence_results/results_"
     if SETTING_Q == 0:
         file_name += "non_"
     file_name += "forced_"
@@ -383,4 +383,4 @@ def run_simulations(spd, sq):
             f.flush()
 
 if __name__ == "__main__":
-    run_simulations(2, 1)
+    run_simulations(2, 0)

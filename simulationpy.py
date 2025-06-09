@@ -341,15 +341,15 @@ class MaxSum:
         return convergence
     
 def run_simulations(spd, sq):
-    N = 1001
-    M = 300
+    N = 101
+    M = 30
     THRESHOLD = 1e-4
     ITERATIONS = 10000
     SETTING_PHI_DOWN = spd   # 0: linear, 1: squared, 2: exponential
     SETTING_Q = sq          # 0: non-forced, 1: forced
     R = 0.001
 
-    file_name = "new_results/results_"
+    file_name = "convergence_results/results_"
     if SETTING_Q == 0:
         file_name += "non_"
     file_name += "forced_"
@@ -363,7 +363,7 @@ def run_simulations(spd, sq):
     print(file_name)
 
     for i in range(100):
-        seed = i + 3 + 100*SETTING_PHI_DOWN +(1-SETTING_Q)*1000
+        seed = i
         np.random.seed(seed)
 
         param = Parameters(
@@ -383,4 +383,4 @@ def run_simulations(spd, sq):
             f.flush()
 
 if __name__ == "__main__":
-    run_simulations(2, 1)
+    run_simulations(2, 0)

@@ -341,13 +341,8 @@ class MaxSum:
         return convergence
     
 def run_simulations(spd, sq):
-<<<<<<< HEAD
     N = 1001
     M = 500
-=======
-    N = 101
-    M = 30
->>>>>>> 8e06ae42b066dec1b679edc262f70891fffd662a
     THRESHOLD = 1e-4
     ITERATIONS = 10000
     SETTING_PHI_DOWN = spd   # 0: linear, 1: squared, 2: exponential

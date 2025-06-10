@@ -383,4 +383,4 @@ def run_simulations(spd, sq):
             f.flush()
 
 if __name__ == "__main__":
-    run_simulations(2, 0)
+    run_simulations(2, 1)

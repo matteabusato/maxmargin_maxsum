@@ -226,17 +226,12 @@ class MaxSum:
     @timing_decorator
     def update_q_down(self):
         for mu in range(self.M):
-            # Precompute abs(q_up[:, mu]) once per mu
             abs_q_up_mu = np.abs(self.q_up[:, mu])
 
-            # Precompute k_tilde[j] for each j in I_minus[mu]
             k_tilde = np.full(self.N, -1)
             for k, j in enumerate(self.I_minus[mu]):
                 k_tilde[j] = k
 
-            # --------------------
-            # Compute m_plus[mu]
-            # --------------------
             for s_index in range(2):
                 s = self.ind_to_s(s_index)
                 delta_under = np.array(self.POSSIBLE_DELTA_UNDERLINED)
@@ -248,9 +243,6 @@ class MaxSum:
 
             self.M_plus[mu] = (self.m_plus[mu][1] - self.m_plus[mu][0]) / 2
 
-            # --------------------
-            # Compute m_minus[mu], delta_star, k_star
-            # --------------------
             for s_index in range(2):
                 s = self.ind_to_s(s_index)
                 max1 = -np.inf
@@ -270,15 +262,9 @@ class MaxSum:
 
             self.M_minus[mu] = (self.m_minus[mu][1] - self.m_minus[mu][0]) / 2
 
-            # --------------------
-            # Update q_down for U_plus
-            # --------------------
             for j in self.U_plus[mu]:
                 self.q_down[j][mu] = self.patterns[mu][j] * self.M_plus[mu]
 
-            # --------------------
-            # Update q_down for U_minus
-            # --------------------
             I_minus_mu = self.I_minus[mu]
             k_star_max = max(self.k_star[mu])
 

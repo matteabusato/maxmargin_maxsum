@@ -221,7 +221,6 @@ class MaxSum:
         for mu in range(self.M):
             abs_q_up_mu = np.abs(self.q_up[:, mu])
 
-
             k_tilde = np.full(self.N, -1)
             for k, j in enumerate(self.I_minus[mu]):
                 k_tilde[j] = k

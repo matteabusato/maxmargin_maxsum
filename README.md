@@ -10,7 +10,8 @@ The project develops and tests an efficient message-passing scheme to solve the 
 ├── bperceptron.py                # General implementation of the inefficient max-sum updates
 ├── bperceptron_efficient.py      # Core implementation of the efficient max-sum updates
 ├── simulations/
-│   ├── simulation.ipynb          # Implementation to run simulations
+│   ├── simulation.ipynb          # Implementation to run simulations in notebook version
+│   ├── simulation_py.py          # Implementation to run simulations
 │   └── simulation_profiling.py   # Implementation for profiling of the message updates
 ├── results/                         # Output of simulations
 │   ├── forced_linear.txt

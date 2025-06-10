@@ -1,7 +1,4 @@
-import time
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
 
 class Parameters:
     def __init__(self, N, M, THRESHOLD, iterations, setting_phi_down, setting_q, r):
@@ -12,15 +9,6 @@ class Parameters:
         self.setting_phi_down = setting_phi_down
         self.setting_q = setting_q
         self.r = r
-
-def timing_decorator(func):
-    def wrapper(self, *args, **kwargs):
-        start = time.perf_counter()
-        result = func(self, *args, **kwargs)
-        end = time.perf_counter()
-        print(f"Function {func.__name__} took {end - start:.6f} seconds")
-        return result
-    return wrapper
 
 class MaxSum:
     def __init__(self, param):
@@ -103,7 +91,6 @@ class MaxSum:
         x = np.asarray(x)
         return np.where(x >= 0, 1, -1)
     
-    @timing_decorator
     def store(self):
         self.q_up_old = np.copy(self.q_up)
         self.psi_up_old = np.copy(self.psi_up)
@@ -118,7 +105,6 @@ class MaxSum:
             self.delta_star_max = current_delta_star
             self.weights_best = self.weights.copy()
 
-    @timing_decorator
     def update_phi_up(self):
         self.update_xi()
         self.update_gamma()
@@ -127,15 +113,12 @@ class MaxSum:
         # NORMALIZE
         self.phi_up = self.normalize(self.phi_up)
 
-    @timing_decorator
     def update_xi(self):
         self.xi[:, :] = np.maximum.accumulate(self.psi_up[:, ::-1], axis=1)[:, ::-1].T
 
-    @timing_decorator
     def update_gamma(self):
         self.gamma[:, :] = self.psi_up.T - self.xi
 
-    @timing_decorator
     def update_psi_up(self):
         for mu in range(self.M):
             weights_tilde = self.sign_arr(self.q_up.T[mu])
@@ -168,14 +151,12 @@ class MaxSum:
             # NORMALIZE
             self.psi_up[mu] = self.psi_up[mu] - np.sum(np.abs(self.q_up.T[mu]))
 
-    @timing_decorator
     def update_q_up(self):
         self.q_up[:, :] = np.sum(self.q_down, axis=1, keepdims=True) - self.q_down
 
         if self.setting_q == 1:
             self.q_up += self.R * self.time * self.q_singlesite_old[:, np.newaxis]
 
-    @timing_decorator
     def update_phi_down(self):
         match self.setting_phi_down:
             case 0:  # linear spacing
@@ -193,19 +174,9 @@ class MaxSum:
                 exp_x_norm = (exp_x - exp_x[0]) / (exp_x[-1] - exp_x[0]) - 1
                 self.phi_down[:] = exp_x_norm
 
-    @timing_decorator
-    def update_ipsilon(self):
-        for mu in range(self.M):
-            for delta_index in range(self.N + 1):
-                self.ipsilon[mu][delta_index] = (
-                    np.sum(self.xi[delta_index]) - self.xi[delta_index][mu] + self.phi_down[delta_index]
-                )
-
-    @timing_decorator
-    def update_psi_down(self):
+    def update_psi_down2(self):
         self.update_ipsilon()
         
-        # Precompute max_gamma
         max_gamma = np.full((self.N + 1, self.M), -np.inf)
         for delta_star_index in range(self.N + 1):
             for mu in range(self.M):
@@ -223,10 +194,55 @@ class MaxSum:
 
         self.psi_down = self.normalize(self.psi_down)
 
-    @timing_decorator
+    def update_psi_down(self):
+        rho_star = np.full(self.N+1, -1)
+        omega = np.full(self.N + 1, -np.inf)
+        omega_prime = np.full(self.N + 1, -np.inf)
+        gamma_overlined = np.zeros((self.M, self.N + 1))
+        lambda_delta = np.zeros((self.M, self.N + 1))
+
+        self.update_ipsilon()
+
+        for delta in range(self.N + 1):
+            for rho in range(self.M):
+                if self.gamma[delta][rho] > omega[delta]:
+                    omega[delta] = self.gamma[delta][rho]
+                    rho_star[delta] = rho
+            for rho in range(self.M):
+                if rho != rho_star[delta] and self.gamma[delta][rho] > omega_prime[delta]:
+                    omega_prime[delta] = self.gamma[delta][rho]
+
+        for mu in range(self.M):
+            for delta in range(self.N + 1):
+                if rho_star[delta] == mu:
+                    gamma_overlined[mu][delta] = omega[delta]
+                else:
+                    gamma_overlined[mu][delta] = omega_prime[delta]
+
+        for mu in range(self.M):
+            for delta in range(self.N + 1):
+                if delta == 0:
+                    lambda_delta[mu][delta] = -np.inf
+                else:
+                    lambda_delta[mu][delta] = max(gamma_overlined[mu][delta - 1] + self.ipsilon[mu][delta - 1], lambda_delta[mu][delta - 1])
+
+        for mu in range(self.M):
+            for delta_mu in range(self.N + 1):
+                self.psi_down[mu][delta_mu] = max(lambda_delta[mu][delta_mu], self.ipsilon[mu][delta_mu])
+
+
+        self.psi_down = self.normalize(self.psi_down)
+
+    def update_ipsilon(self):
+        for delta_index in range(self.N + 1):
+            ipsilon_tot = np.sum(self.xi[delta_index]) + self.phi_down[delta_index]
+            for mu in range(self.M):
+                self.ipsilon[mu][delta_index] = ipsilon_tot - self.xi[delta_index][mu]
+
     def update_q_down(self):
         for mu in range(self.M):
             abs_q_up_mu = np.abs(self.q_up[:, mu])
+
 
             k_tilde = np.full(self.N, -1)
             for k, j in enumerate(self.I_minus[mu]):
@@ -299,20 +315,17 @@ class MaxSum:
                     M_hat = (m_hat[1] - m_hat[0]) / 2
                     self.q_down[j][mu] = self.patterns[mu][j] * M_hat
 
-    @timing_decorator
     def update_singlesite(self):
         self.q_singlesite[:] = np.sum(self.q_down, axis=1)
         if self.setting_q == 1:
             self.q_singlesite += self.R * self.time * self.q_singlesite_old
 
-    @timing_decorator
     def update_weights(self):
         self.update_singlesite()
         self.weights[:] = self.sign_arr(self.q_singlesite)
 
     def check_convergence(self):
         self.check_weights()
-        # self.check_differences()  # Uncomment if you want to use it
 
         if self.COUNTERS[0] >= self.WEIGHTS_MAX_ITERATIONS:
             return True
@@ -351,7 +364,17 @@ class MaxSum:
         convergence = False
         for i in range(self.ITERATIONS):
             self.forward_pass()
-            self.backward_pass()
+            self.update_phi_down()
+            self.update_psi_down()
+            copy1 = np.copy(self.psi_down)
+            self.update_psi_down2()
+            copy2 = np.copy(self.psi_down)
+
+            if not np.array_equal(copy1, copy2):
+                print("WARNING: psi_down changed after update_psi_down2")
+                print("copy1: ", copy1)
+                print("copy2: ", copy2)
+
             self.update_weights()
 
             print("ITERATION: ", i, "weights: ", self.weights)
@@ -367,16 +390,16 @@ class MaxSum:
 
         return convergence
     
-def run_simulations():
-    N = 1001
-    M = 300
+def run_simulations(spd, sq):
+    N = 101
+    M = 30
     THRESHOLD = 1e-4
     ITERATIONS = 10000
-    SETTING_PHI_DOWN = 0   # 0: linear, 1: squared, 2: exponential
-    SETTING_Q = 0          # 0: non-forced, 1: forced
-    R = 0.01
+    SETTING_PHI_DOWN = spd   # 0: linear, 1: squared, 2: exponential
+    SETTING_Q = sq          # 0: non-forced, 1: forced
+    R = 0.001
 
-    file_name = "new_results/results_"
+    file_name = "convergence_results/results_"
     if SETTING_Q == 0:
         file_name += "non_"
     file_name += "forced_"
@@ -390,7 +413,7 @@ def run_simulations():
     print(file_name)
 
     for i in range(100):
-        seed = i * 5
+        seed = i + 1
         np.random.seed(seed)
 
         param = Parameters(
@@ -410,4 +433,4 @@ def run_simulations():
             f.flush()
 
 if __name__ == "__main__":
-    run_simulations()
+    run_simulations(2, 0)

@@ -175,22 +175,40 @@ class MaxSum:
                 self.phi_down[:] = exp_x_norm
 
     def update_psi_down(self):
+        rho_star = np.full(self.N+1, -1)
+        omega = np.full(self.N + 1, -np.inf)
+        omega_prime = np.full(self.N + 1, -np.inf)
+        gamma_overlined = np.zeros((self.M, self.N + 1))
+        lambda_delta = np.zeros((self.M, self.N + 1))
+
         self.update_ipsilon()
-        
-        max_gamma = np.full((self.N + 1, self.M), -np.inf)
-        for delta_star_index in range(self.N + 1):
-            for mu in range(self.M):
-                mask = np.arange(self.M) != mu
-                max_gamma[delta_star_index][mu] = np.max(self.gamma[delta_star_index][mask])
+
+        for delta in range(self.N + 1):
+            for rho in range(self.M):
+                if self.gamma[delta][rho] > omega[delta]:
+                    omega[delta] = self.gamma[delta][rho]
+                    rho_star[delta] = rho
+            for rho in range(self.M):
+                if rho != rho_star[delta] and self.gamma[delta][rho] > omega_prime[delta]:
+                    omega_prime[delta] = self.gamma[delta][rho]
 
         for mu in range(self.M):
-            for delta_mu_index in range(self.N + 1):
-                if delta_mu_index > 0:
-                    temp = max_gamma[:delta_mu_index, mu] + self.ipsilon[mu][:delta_mu_index]
-                    max1 = np.max(temp)
+            for delta in range(self.N + 1):
+                if rho_star[delta] == mu:
+                    gamma_overlined[mu][delta] = omega[delta]
                 else:
-                    max1 = -np.inf
-                self.psi_down[mu][delta_mu_index] = max(max1, self.ipsilon[mu][delta_mu_index])
+                    gamma_overlined[mu][delta] = omega_prime[delta]
+
+        for mu in range(self.M):
+            for delta in range(self.N + 1):
+                if delta == 0:
+                    lambda_delta[mu][delta] = -np.inf
+                else:
+                    lambda_delta[mu][delta] = max(gamma_overlined[mu][delta - 1] + self.ipsilon[mu][delta - 1], lambda_delta[mu][delta - 1])
+
+        for mu in range(self.M):
+            for delta_mu in range(self.N + 1):
+                self.psi_down[mu][delta_mu] = max(lambda_delta[mu][delta_mu], self.ipsilon[mu][delta_mu])
 
         self.psi_down = self.normalize(self.psi_down)
 
@@ -202,7 +220,6 @@ class MaxSum:
     def update_q_down(self):
         for mu in range(self.M):
             abs_q_up_mu = np.abs(self.q_up[:, mu])
-
 
             k_tilde = np.full(self.N, -1)
             for k, j in enumerate(self.I_minus[mu]):

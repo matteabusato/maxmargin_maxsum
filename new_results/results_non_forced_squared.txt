@@ -1,3 +1,5 @@
+Results:
+N  M  Alpha  Max_Iterations  Converged  Iterations_To_Converge  Delta_max  Delta_convergence  Random_seed
 101  30  0.297029702970297  10000  False  10000  7  -101  0
 101  30  0.297029702970297  10000  False  10000  9  -101  1
 101  30  0.297029702970297  10000  False  10000  7  -101  2

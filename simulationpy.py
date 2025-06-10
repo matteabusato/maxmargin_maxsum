@@ -400,8 +400,4 @@ def run_simulations(spd, sq):
             f.flush()
 
 if __name__ == "__main__":
-<<<<<<< HEAD
     run_simulations(2, 1)
-=======
-    run_simulations(1, 1)
->>>>>>> 602a89f6c50da5da5608faa41b3bb2601637884f

@@ -400,4 +400,4 @@ def run_simulations(spd, sq):
             f.flush()
 
 if __name__ == "__main__":
-    run_simulations(1, 1)
+    run_simulations(2, 1)

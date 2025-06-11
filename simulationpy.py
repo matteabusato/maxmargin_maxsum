@@ -380,7 +380,7 @@ def run_simulations(spd, sq):
     print(file_name)
 
     for i in range(100):
-        seed = i + 
+        seed = i + 602
         np.random.seed(seed)
 
         param = Parameters(

@@ -174,26 +174,6 @@ class MaxSum:
                 exp_x_norm = (exp_x - exp_x[0]) / (exp_x[-1] - exp_x[0]) - 1
                 self.phi_down[:] = exp_x_norm
 
-    def update_psi_down2(self):
-        self.update_ipsilon()
-        
-        max_gamma = np.full((self.N + 1, self.M), -np.inf)
-        for delta_star_index in range(self.N + 1):
-            for mu in range(self.M):
-                mask = np.arange(self.M) != mu
-                max_gamma[delta_star_index][mu] = np.max(self.gamma[delta_star_index][mask])
-
-        for mu in range(self.M):
-            for delta_mu_index in range(self.N + 1):
-                if delta_mu_index > 0:
-                    temp = max_gamma[:delta_mu_index, mu] + self.ipsilon[mu][:delta_mu_index]
-                    max1 = np.max(temp)
-                else:
-                    max1 = -np.inf
-                self.psi_down[mu][delta_mu_index] = max(max1, self.ipsilon[mu][delta_mu_index])
-
-        self.psi_down = self.normalize(self.psi_down)
-
     def update_psi_down(self):
         rho_star = np.full(self.N+1, -1)
         omega = np.full(self.N + 1, -np.inf)
@@ -230,19 +210,16 @@ class MaxSum:
             for delta_mu in range(self.N + 1):
                 self.psi_down[mu][delta_mu] = max(lambda_delta[mu][delta_mu], self.ipsilon[mu][delta_mu])
 
-
         self.psi_down = self.normalize(self.psi_down)
 
     def update_ipsilon(self):
-        for delta_index in range(self.N + 1):
-            ipsilon_tot = np.sum(self.xi[delta_index]) + self.phi_down[delta_index]
-            for mu in range(self.M):
-                self.ipsilon[mu][delta_index] = ipsilon_tot - self.xi[delta_index][mu]
+        for mu in range(self.M):
+            for delta_index in range(self.N + 1):
+                self.ipsilon[mu][delta_index] = np.sum(self.xi[delta_index]) - self.xi[delta_index][mu] + self.phi_down[delta_index]
 
     def update_q_down(self):
         for mu in range(self.M):
             abs_q_up_mu = np.abs(self.q_up[:, mu])
-
 
             k_tilde = np.full(self.N, -1)
             for k, j in enumerate(self.I_minus[mu]):
@@ -364,17 +341,7 @@ class MaxSum:
         convergence = False
         for i in range(self.ITERATIONS):
             self.forward_pass()
-            self.update_phi_down()
-            self.update_psi_down()
-            copy1 = np.copy(self.psi_down)
-            self.update_psi_down2()
-            copy2 = np.copy(self.psi_down)
-
-            if not np.array_equal(copy1, copy2):
-                print("WARNING: psi_down changed after update_psi_down2")
-                print("copy1: ", copy1)
-                print("copy2: ", copy2)
-
+            self.backward_pass()
             self.update_weights()
 
             print("ITERATION: ", i, "weights: ", self.weights)
@@ -391,15 +358,15 @@ class MaxSum:
         return convergence
     
 def run_simulations(spd, sq):
-    N = 101
-    M = 30
+    N = 1001
+    M = 600
     THRESHOLD = 1e-4
     ITERATIONS = 10000
     SETTING_PHI_DOWN = spd   # 0: linear, 1: squared, 2: exponential
     SETTING_Q = sq          # 0: non-forced, 1: forced
     R = 0.001
 
-    file_name = "convergence_results/results_"
+    file_name = "new_results/results_"
     if SETTING_Q == 0:
         file_name += "non_"
     file_name += "forced_"
@@ -413,7 +380,7 @@ def run_simulations(spd, sq):
     print(file_name)
 
     for i in range(100):
-        seed = i + 1
+        seed = i + 500
         np.random.seed(seed)
 
         param = Parameters(
@@ -433,4 +400,4 @@ def run_simulations(spd, sq):
             f.flush()
 
 if __name__ == "__main__":
-    run_simulations(2, 0)
+    run_simulations(2, 1)

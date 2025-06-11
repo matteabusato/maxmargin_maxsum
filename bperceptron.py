@@ -250,20 +250,15 @@ def converge():
         print("weights: ", weights)
         print()
 
-        # if check_convergence():
-        #     convergence = True
-        #     break
+        if check_convergence():
+            convergence = True
+            break
     
     return convergence
     
 # ------------------------------------------------------------------
 # MAIN
 if __name__ == '__main__':
-    # if converge():
-    #     print('Has converged!')
-    # else:
-    #     print('Fail :(')
-
     print(patterns)
     converge()
     print("done")

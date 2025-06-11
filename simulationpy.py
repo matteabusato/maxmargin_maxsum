@@ -380,7 +380,11 @@ def run_simulations(spd, sq):
     print(file_name)
 
     for i in range(100):
+<<<<<<< HEAD
         seed = i + 505
+=======
+        seed = i + 
+>>>>>>> fc596ed358337e7fa2183f26f41653ce20a9dfc7
         np.random.seed(seed)
 
         param = Parameters(

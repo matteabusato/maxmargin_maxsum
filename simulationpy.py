@@ -357,9 +357,9 @@ class MaxSum:
 
         return convergence
     
-def run_simulations(spd, sq):
+def run_simulations(spd, sq, it, start_seed, m_val):
     N = 1001
-    M = 600
+    M = m_val
     THRESHOLD = 1e-4
     ITERATIONS = 10000
     SETTING_PHI_DOWN = spd   # 0: linear, 1: squared, 2: exponential
@@ -379,8 +379,8 @@ def run_simulations(spd, sq):
 
     print(file_name)
 
-    for i in range(100):
-        seed = i + 508
+    for i in range(it):
+        seed = i + start_seed
         np.random.seed(seed)
 
         param = Parameters(

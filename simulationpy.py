@@ -400,7 +400,4 @@ def run_simulations(spd, sq, it, start_seed, m_val):
             f.flush()
 
 if __name__ == "__main__":
-    run_simulations(2, 1, 4, 511, 500)
-    run_simulations(2, 1, 5, 310, 400)
-    run_simulations(2, 1, 8, 207, 300)
-    run_simulations(2, 1, 2, 513, 600)
+    run_simulations(1, 1)

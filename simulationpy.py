@@ -380,7 +380,7 @@ def run_simulations(spd, sq):
     print(file_name)
 
     for i in range(100):
-        seed = i + 505
+        seed = i + 508
         np.random.seed(seed)
 
         param = Parameters(
@@ -400,4 +400,4 @@ def run_simulations(spd, sq):
             f.flush()
 
 if __name__ == "__main__":
-    run_simulations(2, 1)
+    run_simulations(1, 1)

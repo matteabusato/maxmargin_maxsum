@@ -359,7 +359,11 @@ class MaxSum:
     
 def run_simulations(spd, sq, it, start_seed, m_val):
     N = 1001
+<<<<<<< HEAD
     M = m_val
+=======
+    M = 700
+>>>>>>> 84247c1a9978e8296ad8c0b687d5d4aa915a31d5
     THRESHOLD = 1e-4
     ITERATIONS = 10000
     SETTING_PHI_DOWN = spd   # 0: linear, 1: squared, 2: exponential

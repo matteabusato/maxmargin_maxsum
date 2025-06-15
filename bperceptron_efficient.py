@@ -330,7 +330,6 @@ def backward_pass():
 
 def check_convergence():
     check_weights()
-    # check_differences()
 
     if COUNTERS[0] >= WEIGHTS_MAX_ITERATIONS:
         return True
@@ -386,19 +385,7 @@ def converge():
 # MAIN
 
 if __name__ == '__main__':
-    with open('results.txt', 'a') as f:
-        f.write(f"\n")
-
-        print("Patterns: ", patterns)
-        converged = False
-        if converge():
-            print("Has converged")
-            print("delta_star_max: ", delta_star_max)
-            print("delta_star_convergence: ", delta_star_convergence)
-            converged = True
-        else:
-            print("Has NOT converged")
-            print("delta_star_max: ", delta_star_max)
-
-        f.write(f"{N}  {M}  {M/N}  {converged}  {delta_star_max}  {delta_star_convergence}  {112}  {ITERATIONS}\n")
-        f.flush()
+    if converge():
+        print("Has converged")
+    else:
+        print("Has NOT converged")

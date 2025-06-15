@@ -259,6 +259,4 @@ def converge():
 # ------------------------------------------------------------------
 # MAIN
 if __name__ == '__main__':
-    print(patterns)
     converge()
-    print("done")

@@ -312,7 +312,7 @@ class MaxSum:
 
     def check_convergence(self):
         self.check_weights()
-        # self.check_differences()  # Uncomment if you want to use it
+        # self.check_differences()
 
         if self.COUNTERS[0] >= self.WEIGHTS_MAX_ITERATIONS:
             return True
